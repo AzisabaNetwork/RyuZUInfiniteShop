@@ -281,7 +281,11 @@ public class ShopTrade {
             } else
                 result = TradeResult.Fail;
             addTradeCount(p);
-            Bukkit.getPluginManager().callEvent(new TradeCompleteEvent());
+            Bukkit.getPluginManager().callEvent(new TradeCompleteEvent(
+                    this,
+                    p,
+                    result
+            ));
         }
         return result;
     }
