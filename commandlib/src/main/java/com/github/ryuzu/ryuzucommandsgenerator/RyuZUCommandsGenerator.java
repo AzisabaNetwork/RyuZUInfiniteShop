@@ -11,7 +11,7 @@ public class RyuZUCommandsGenerator {
     private static JavaPlugin plugin;
     public static CommandsExecuter executer = new CommandsExecuter();
     public static String resistPermissionMessage = ChatColor.RED + "権限がありません";
-    public static final int VERSION = Integer.parseInt((Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".").substring(3).substring(0, (Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".").substring(3).indexOf("_")));
+    public static final int VERSION = Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1]);
 
 
     private RyuZUCommandsGenerator(JavaPlugin plugin) {
