@@ -46,6 +46,7 @@ public class CommandChain {
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " open [world,x,y,z] <player> " + ChatColor.GOLD + LanguageKey.COMMAND_OPEN_TRADE_GUI.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " list " + ChatColor.GOLD + LanguageKey.COMMAND_LIST_SHOPS.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " reload " + ChatColor.GOLD + LanguageKey.COMMAND_RELOAD_ALL_DATA.getMessage());
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " reload-single [shopId] " + ChatColor.GOLD + LanguageKey.COMMAND_RELOAD_SHOP.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " save " + ChatColor.GOLD + LanguageKey.COMMAND_SAVE_ALL_DATA.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " searchability [true/false] [world] " + ChatColor.GOLD + LanguageKey.COMMAND_SET_SEARCHABLE.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " limit [increase/decrease/set] [player] [value] " + ChatColor.GOLD + LanguageKey.COMMAND_CHANGE_TRADE_LIMIT.getMessage());

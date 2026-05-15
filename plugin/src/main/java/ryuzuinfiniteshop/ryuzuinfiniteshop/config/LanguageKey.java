@@ -20,6 +20,7 @@ public enum LanguageKey {
     COMMAND_SPAWN_SHOP("ショップの作成または更新をします", "Create or update a shop"),
     COMMAND_OPEN_TRADE_GUI("ショップの取引画面を開きます", "Open the trade GUI of a shop"),
     COMMAND_RELOAD_ALL_DATA("全てのデータをリロードします", "Reload all data"),
+    COMMAND_RELOAD_SHOP("指定したショップのデータをリロードします", "Reload the data of the specified shop"),
     COMMAND_LOAD_ALL_DATA("全てのデータをファイルから読み取り、ショップをロードします", "Load all data from files"),
     COMMAND_SAVE_ALL_DATA("全てのデータをファイルに保存します", "Unload all data to files"),
     COMMAND_SET_SEARCHABLE("指定されたワールドの全てのショップを検索可にします", "Set all shops in the specified world to searchable"),
