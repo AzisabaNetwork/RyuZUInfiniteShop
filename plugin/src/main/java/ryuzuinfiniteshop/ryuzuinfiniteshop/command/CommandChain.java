@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 public class CommandChain {
     public static void registerCommand() {
-        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "load", "save", "limit");
+        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "reload-single", "load", "save", "limit");
 
         CommandsGenerator.registerCommand(
                         "sis",
@@ -61,6 +61,23 @@ public class CommandChain {
         CommandsGenerator.registerCommand(
                 "sis.reload",
                 data -> FileUtil.reloadAllWithMessage()
+        ).permissions("sis.op").tabCompleteConditon(data -> !FileUtil.isSaveBlock(data));
+
+        CommandsGenerator.registerCommand(
+                "sis.reload-single",
+                data -> {
+                    if (data.getArgs().length == 0) {
+                        data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + "/" + data.getLabel() + "reload single [shopID]");
+                        return;
+                    }
+                    if (!ShopUtil.getShops().containsKey(data.getArgs()[0])) {
+                        data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_SHOP_NOT_EXIST.getMessage());
+                        return;
+                    }
+                    Shop shop = ShopUtil.reloadShop(ShopUtil.getShop(data.getArgs()[0]));
+                    shop.respawnNPC();
+                    data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_SHOP_UPDATED.getMessage());
+                }
         ).permissions("sis.op").tabCompleteConditon(data -> !FileUtil.isSaveBlock(data));
 
         CommandsGenerator.registerCommand(
