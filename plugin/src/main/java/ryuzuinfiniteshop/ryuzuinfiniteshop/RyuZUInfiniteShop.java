@@ -44,6 +44,7 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
     @Override
     public void onEnable() {
         // Plugin startup logic
+        getLogger().info("Detected version is " + VERSION);
         plugin = this;
         logger = getLogger();
         MythicInstanceProvider.setInstance();
