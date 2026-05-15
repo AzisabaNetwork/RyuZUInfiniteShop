@@ -6,12 +6,10 @@ plugins {
     id("java")
     id("java-library")
     id("maven-publish")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.4.1"
 }
 
 repositories {
-    mavenLocal()
-    mavenCentral()
     maven {
         url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     }
@@ -25,22 +23,10 @@ repositories {
         url = uri("https://mvn.lumine.io/repository/maven-public/")
     }
     maven {
-        url = uri("https://repo.codemc.org/repository/maven-public/")
-    }
-    maven {
-        url = uri("https://repo.codemc.io/repository/maven-public/")
-    }
-    maven {
         url = uri("https://nexus.lichtspiele.org/repository/releases/")
     }
     maven {
         url = uri("https://libraries.minecraft.net/")
-    }
-    maven {
-        url = uri("https://maven.citizensnpcs.co/repo")
-    }
-    maven {
-        url = uri("https://repo.maven.apache.org/maven2/")
     }
     maven {
         url = uri("https://maven.enginehub.org/repo/")
@@ -58,8 +44,8 @@ dependencies {
     api(project(":searchableinfiniteshop-v16older"))
     api(project(":searchableinfiniteshop-api"))
     compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
-    compileOnly("org.projectlombok:lombok:1.18.26")
-    annotationProcessor("org.projectlombok:lombok:1.18.26")
+    compileOnly("org.projectlombok:lombok:1.18.46")
+    annotationProcessor("org.projectlombok:lombok:1.18.46")
     compileOnly("com.mojang:authlib:1.5.21")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
     compileOnly("net.citizensnpcs:citizens-main:2.0.30-SNAPSHOT") {

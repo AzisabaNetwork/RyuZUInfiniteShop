@@ -5,20 +5,17 @@
 plugins {
 //    id ("com.github.ryuzu.java-conventions")
     id("java-library")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.4.1"
 }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = uri("https://jitpack.io")
-    }
-    maven {
-        url = uri("https://repo.codemc.org/repository/maven-public/")
-    }
-    maven {
-        url = uri("https://repo.codemc.io/repository/maven-public/")
+allprojects {
+    repositories {
+        mavenLocal()
+        maven("https://repo.papermc.io/repository/maven-public/")
+        mavenCentral()
+        maven("https://jitpack.io")
+        maven("https://repo.codemc.io/repository/maven-public/")
+        maven("https://maven.citizensnpcs.co/repo")
     }
 }
 
@@ -40,5 +37,5 @@ dependencies {
     api(project(":searchableinfiniteshop-api"))
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_11
+java.sourceCompatibility = JavaVersion.VERSION_21
 description = "Searchable Infinite Shop Plugin"
