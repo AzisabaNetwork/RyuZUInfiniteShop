@@ -21,7 +21,7 @@ allprojects {
 }
 
 group = "com.github.ryuzu"
-version = "1.0.0"
+version = "1.0.1"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -33,6 +33,7 @@ tasks.withType<Javadoc> {
 
 dependencies {
     api(project(":searchableinfiniteshop-plugin"))
+    api(project(":searchableinfiniteshop-v21newer"))
     api(project(":searchableinfiniteshop-v16newer"))
     api(project(":searchableinfiniteshop-v16older"))
     api(project(":searchableinfiniteshop-api"))

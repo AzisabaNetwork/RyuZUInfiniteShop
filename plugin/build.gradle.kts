@@ -40,6 +40,7 @@ dependencies {
     implementation("com.saicone.rtag:rtag-item:1.4.2")
 //    implementation("de.tr7zw:item-nbt-api:2.12.0")
     api("com.google.guava:guava:31.1-jre")
+    api(project(":searchableinfiniteshop-v21newer"))
     api(project(":searchableinfiniteshop-v16newer"))
     api(project(":searchableinfiniteshop-v16older"))
     api(project(":searchableinfiniteshop-api"))
