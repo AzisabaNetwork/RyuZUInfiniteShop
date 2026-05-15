@@ -5,6 +5,7 @@
 plugins {
 //    id ("com.github.ryuzu.java-conventions")
     id("java-library")
+    id("maven-publish")
     id("com.gradleup.shadow") version "9.4.1"
 }
 
@@ -39,3 +40,28 @@ dependencies {
 
 java.sourceCompatibility = JavaVersion.VERSION_21
 description = "Searchable Infinite Shop Plugin"
+
+publishing {
+    repositories {
+        maven {
+            name = "repo"
+            credentials(PasswordCredentials::class)
+            url =
+                uri(
+                    if (project.version.toString().endsWith("SNAPSHOT")) {
+                        project.findProperty("deploySnapshotURL")
+                            ?: System.getProperty("deploySnapshotURL", "https://repo.azisaba.net/repository/maven-snapshots/")
+                    } else {
+                        project.findProperty("deployReleasesURL")
+                            ?: System.getProperty("deployReleasesURL", "https://repo.azisaba.net/repository/maven-releases/")
+                    },
+                )
+        }
+    }
+
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
+}
