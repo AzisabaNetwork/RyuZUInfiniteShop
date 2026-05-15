@@ -34,7 +34,6 @@ repositories {
 }
 
 dependencies {
-    api("com.github.Y-RyuZU:RyuZUCommandsGenerator:2.3")
     implementation("com.saicone.rtag:rtag:1.4.2")
     implementation("com.saicone.rtag:rtag-entity:1.4.2")
     implementation("com.saicone.rtag:rtag-item:1.4.2")
@@ -43,6 +42,7 @@ dependencies {
     api(project(":searchableinfiniteshop-v21newer"))
     api(project(":searchableinfiniteshop-v16newer"))
     api(project(":searchableinfiniteshop-v16older"))
+    api(project(":searchableinfiniteshop-commandlib"))
     api(project(":searchableinfiniteshop-api"))
     compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
     compileOnly("org.projectlombok:lombok:1.18.46")
