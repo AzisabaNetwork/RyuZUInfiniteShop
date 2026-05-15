@@ -39,7 +39,7 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
     private static Logger logger;
     public static final String prefixCommand = ChatColor.GOLD + "[SIS]";
     public static final String prefixPersistent = "RyuZU.Infinite.Shop.";
-    public static final int VERSION = Integer.parseInt((Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".").substring(3).substring(0, (Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3] + ".").substring(3).indexOf("_")));
+    public static final int VERSION = Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1]);
 
     @Override
     public void onEnable() {
