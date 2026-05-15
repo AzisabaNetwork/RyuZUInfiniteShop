@@ -31,10 +31,14 @@ public class MythicInstanceProvider {
                 Class<?> mythicHandlerV4_12_0Class = Class.forName("com.github.ryuzu.searchableinfiniteshop.v16older.MythicHandlerV4_12_0");
                 Constructor<?> mythicHandlerV4_12_0Constructor = mythicHandlerV4_12_0Class.getConstructor(JavaPlugin.class, Consumer.class);
                 instance = (IMythicHandler) mythicHandlerV4_12_0Constructor.newInstance(RyuZUInfiniteShop.getPlugin(), (Consumer<Runnable>) ShopUtil::reloadAllShopTradeInventory);
-            } else {
+            } else if (RyuZUInfiniteShop.VERSION < 21) {
                 Class<?> mythicHandlerV5_2_1Class = Class.forName("com.github.ryuzu.searchableinfiniteshop.v16newer.MythicHandlerV5_2_1");
                 Constructor<?> mythicHandlerV5_2_1Constructor = mythicHandlerV5_2_1Class.getConstructor();
                 instance = (IMythicHandler) mythicHandlerV5_2_1Constructor.newInstance();
+            } else {
+                Class<?> mythicHandlerV5_12_0Class = Class.forName("com.github.ryuzu.searchableinfiniteshop.v21newer.MythicHandlerV5_12_0");
+                Constructor<?> mythicHandlerV5_12_0Constructor = mythicHandlerV5_12_0Class.getConstructor();
+                instance = (IMythicHandler) mythicHandlerV5_12_0Constructor.newInstance();
             }
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException |
                  IllegalAccessException e) {
