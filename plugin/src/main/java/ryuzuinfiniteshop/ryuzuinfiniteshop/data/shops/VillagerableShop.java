@@ -105,7 +105,11 @@ public class VillagerableShop extends AgeableShop {
                 this.profession = Villager.Profession.FARMER;
             }
             if (RyuZUInfiniteShop.VERSION < 14) return;
-            this.biome = Villager.Type.valueOf(yaml.getString("Npc.Options.Biome", "PLAINS"));
+            try {
+                this.biome = Villager.Type.valueOf(yaml.getString("Npc.Options.Biome", "PLAINS"));
+            } catch (RuntimeException e) {
+                this.biome = PLAINS;
+            }
             this.level = yaml.getInt("Npc.Options.Level", 1);
         });
     }
