@@ -44,7 +44,7 @@ dependencies {
     api(project(":searchableinfiniteshop-v16older"))
     api(project(":searchableinfiniteshop-commandlib"))
     api(project(":searchableinfiniteshop-api"))
-    compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")
     compileOnly("com.mojang:authlib:1.5.21")

@@ -12,13 +12,15 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.XMaterial;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static org.bukkit.entity.Villager.Profession.*;
+import static org.bukkit.entity.Villager.Type.*;
 
 @Getter
 public class VillagerableShop extends AgeableShop {
@@ -89,7 +91,7 @@ public class VillagerableShop extends AgeableShop {
         return super.getSaveYamlProcess().andThen(yaml -> {
             yaml.set("Npc.Options.Profession", JavaUtil.getOrDefault(profession, Villager.Profession.FARMER).toString());
             if (RyuZUInfiniteShop.VERSION < 14) return;
-            yaml.set("Npc.Options.Biome", JavaUtil.getOrDefault(biome, Villager.Type.PLAINS).toString());
+            yaml.set("Npc.Options.Biome", JavaUtil.getOrDefault(biome, PLAINS).toString());
             yaml.set("Npc.Options.Level", level);
         });
     }
@@ -97,7 +99,11 @@ public class VillagerableShop extends AgeableShop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.profession = Villager.Profession.valueOf(yaml.getString("Npc.Options.Profession", RyuZUInfiniteShop.VERSION >= 14 ? "NONE" : "NORMAL"));
+            try {
+                this.profession = Villager.Profession.valueOf(yaml.getString("Npc.Options.Profession", RyuZUInfiniteShop.VERSION >= 14 ? "NONE" : "NORMAL"));
+            } catch (IllegalArgumentException e) {
+                this.profession = Villager.Profession.FARMER;
+            }
             if (RyuZUInfiniteShop.VERSION < 14) return;
             this.biome = Villager.Type.valueOf(yaml.getString("Npc.Options.Biome", "PLAINS"));
             this.level = yaml.getInt("Npc.Options.Level", 1);
@@ -117,94 +123,84 @@ public class VillagerableShop extends AgeableShop {
 
     public Material getJobBlockMaterial() {
         if (RyuZUInfiniteShop.VERSION >= 14) {
-            switch (profession) {
-                case NITWIT:
-                    return Material.GREEN_STAINED_GLASS;
-                case ARMORER:
-                    return Material.BLAST_FURNACE;
-                case BUTCHER:
-                    return Material.SMOKER;
-                case CARTOGRAPHER:
-                    return Material.CARTOGRAPHY_TABLE;
-                case CLERIC:
-                    return Material.BREWING_STAND;
-                case FARMER:
-                    return Material.COMPOSTER;
-                case FISHERMAN:
-                    return Material.BARREL;
-                case FLETCHER:
-                    return Material.FLETCHING_TABLE;
-                case LEATHERWORKER:
-                    return Material.CAULDRON;
-                case LIBRARIAN:
-                    return Material.LECTERN;
-                case MASON:
-                    return Material.STONECUTTER;
-                case SHEPHERD:
-                    return Material.LOOM;
-                case TOOLSMITH:
-                    return Material.SMITHING_TABLE;
-                case WEAPONSMITH:
-                    return Material.GRINDSTONE;
-                case NONE:
-                default:
-                    return Material.WHITE_STAINED_GLASS;
+            if (profession.equals(NITWIT)) {
+                return Material.GREEN_STAINED_GLASS;
+            } else if (profession.equals(ARMORER)) {
+                return Material.BLAST_FURNACE;
+            } else if (profession.equals(BUTCHER)) {
+                return Material.SMOKER;
+            } else if (profession.equals(CARTOGRAPHER)) {
+                return Material.CARTOGRAPHY_TABLE;
+            } else if (profession.equals(CLERIC)) {
+                return Material.BREWING_STAND;
+            } else if (profession.equals(FARMER)) {
+                return Material.COMPOSTER;
+            } else if (profession.equals(FISHERMAN)) {
+                return Material.BARREL;
+            } else if (profession.equals(FLETCHER)) {
+                return Material.FLETCHING_TABLE;
+            } else if (profession.equals(LEATHERWORKER)) {
+                return Material.CAULDRON;
+            } else if (profession.equals(LIBRARIAN)) {
+                return Material.LECTERN;
+            } else if (profession.equals(MASON)) {
+                return Material.STONECUTTER;
+            } else if (profession.equals(SHEPHERD)) {
+                return Material.LOOM;
+            } else if (profession.equals(TOOLSMITH)) {
+                return Material.SMITHING_TABLE;
+            } else if (profession.equals(WEAPONSMITH)) {
+                return Material.GRINDSTONE;
             }
+            return Material.WHITE_STAINED_GLASS;
         } else {
-            switch (profession.name()) {
-                case "NORMAL":
-                    return Material.DIRT;
-                case "FARMER":
-                    return Material.WHEAT;
-                case "LIBRARIAN":
-                    return Material.BOOKSHELF;
-                case "PRIEST":
-                    return Material.ROTTEN_FLESH;
-                case "BLACKSMITH":
-                    return Material.ANVIL;
-                case "BUTCHER":
-                    return XMaterial.matchXMaterial("PORKCHOP").get().parseMaterial();
-                case "NITWIT":
-                    return Material.SLIME_BALL;
-                default:
-                    return Material.STONE;
-            }
+            return switch (profession.name()) {
+                case "NORMAL" -> Material.DIRT;
+                case "FARMER" -> Material.WHEAT;
+                case "LIBRARIAN" -> Material.BOOKSHELF;
+                case "PRIEST" -> Material.ROTTEN_FLESH;
+                case "BLACKSMITH" -> Material.ANVIL;
+                case "BUTCHER" -> XMaterial.matchXMaterial("PORKCHOP").get().parseMaterial();
+                case "NITWIT" -> Material.SLIME_BALL;
+                default -> Material.STONE;
+            };
         }
     }
 
     public Material getBiomeMaterial() {
-        switch (biome) {
-            case DESERT:
-                return Material.SAND;
-            case JUNGLE:
-                return Material.JUNGLE_LOG;
-            case SAVANNA:
-                return Material.TERRACOTTA;
-            case SNOW:
-                return Material.SNOW_BLOCK;
-            case SWAMP:
-                return Material.LILY_PAD;
-            case TAIGA:
-                return Material.DARK_OAK_LOG;
-            case PLAINS:
-            default:
-                return Material.GRASS_BLOCK;
+        if (biome.equals(DESERT)) {
+            return Material.SAND;
+        } else if (biome.equals(JUNGLE)) {
+            return Material.JUNGLE_LOG;
+        } else if (biome.equals(SAVANNA)) {
+            return Material.TERRACOTTA;
+        } else if (biome.equals(SNOW)) {
+            return Material.SNOW_BLOCK;
+        } else if (biome.equals(SWAMP)) {
+            return Material.LILY_PAD;
+        } else if (biome.equals(TAIGA)) {
+            return Material.DARK_OAK_LOG;
         }
+        return Material.GRASS_BLOCK;
     }
 
     public Material getLevelMaterial() {
         switch (level) {
-            case 2:
+            case 2 -> {
                 return Material.IRON_INGOT;
-            case 3:
+            }
+            case 3 -> {
                 return Material.GOLD_INGOT;
-            case 4:
+            }
+            case 4 -> {
                 return Material.EMERALD;
-            case 5:
+            }
+            case 5 -> {
                 return Material.DIAMOND;
-            case 1:
-            default:
+            }
+            default -> {
                 return Material.COBBLESTONE;
+            }
         }
     }
 }
