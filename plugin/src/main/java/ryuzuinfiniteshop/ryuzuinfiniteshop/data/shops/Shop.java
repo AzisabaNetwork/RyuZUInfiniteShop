@@ -516,7 +516,7 @@ public class Shop {
 //        npc.setPersistent(false);
         npc = NBTUtil.setNMSTag(npc, "Shop", getID());
         initializeLivingEntitiy(npc);
-        if (EntityType.ENDER_CRYSTAL.name().equalsIgnoreCase(entityType))
+        if (EntityType.END_CRYSTAL.name().equalsIgnoreCase(entityType))
             ((EnderCrystal) npc).setShowingBottom(false);
     }
 

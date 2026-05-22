@@ -142,7 +142,7 @@ public class ItemUtil {
         ItemStack item = base.clone();
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(name);
-        if (enchanted) meta.addEnchant(Enchantment.DURABILITY, 1, true);
+        if (enchanted) meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         if (lore.length != 0) meta.setLore(Arrays.stream(lore).filter(Objects::nonNull).collect(Collectors.toList()));
         meta.addItemFlags(ItemFlag.values());
         meta.setUnbreakable(true);

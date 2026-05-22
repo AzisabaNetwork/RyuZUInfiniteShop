@@ -240,7 +240,7 @@ public class ShopUtil {
             return new CatShop(location, type, config);
         if (RyuZUInfiniteShop.VERSION >= 18 && entityType.equals(EntityType.AXOLOTL))
             return new AxolotlShop(location, type, config);
-        if (entityType.equals(EntityType.SNOWMAN))
+        if (entityType.equals(EntityType.SNOW_GOLEM))
             return new SnowmanShop(location, type, config);
         if (entityType.equals(EntityType.RABBIT))
             return new RabbitShop(location, type, config);
