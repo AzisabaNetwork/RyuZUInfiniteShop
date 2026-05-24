@@ -719,11 +719,10 @@ public class Shop {
         if (npc != null) {
             NBTUtil.removeNMSTag(npc);
             npc.remove();
-            Block block = location.clone().subtract(0, -1, 0).getBlock();
-            location.getWorld().getNearbyEntities(LocationUtil.getMiddleLocation(location), 0.1, 0.1, 0.1).stream().forEach(Entity::remove);
-//            Location pos = block.getBlockData() instanceof Slab && ((Slab) block.getBlockData()).getType().equals(Slab.Type.BOTTOM) ? location.clone().add(0, -0.5, 0) : location;
-//            location.getWorld().getNearbyEntities(LocationUtil.getMiddleLocation(location), 0.3, 0.3, 0.3).stream().filter(entity -> NBTUtil.getNMSStringTag(entity, "Shop") != null).forEach(Entity::remove);
         }
+        location.getWorld().getNearbyEntities(LocationUtil.getMiddleLocation(location), 0.5, 0.5, 0.5).stream()
+                .filter(entity -> NBTUtil.getNMSStringTag(entity, "Shop") != null)
+                .forEach(Entity::remove);
         if (npcType.equals(NpcType.CITIZEN)) CitizensHandler.despawnNPC(this);
         uuid = null;
     }
