@@ -3,6 +3,7 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops;
 import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import com.github.ryuzu.searchableinfiniteshop.api.IVillagerHandler;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
@@ -10,14 +11,13 @@ import org.bukkit.entity.Villager;
 import org.bukkit.entity.ZombieVillager;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VillagerHandlerProvider;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.XMaterial;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.bukkit.entity.Villager.Profession.*;
 import static org.bukkit.entity.Villager.Type.*;
@@ -72,18 +72,21 @@ public class VillagerableShop extends AgeableShop {
     }
 
     public Villager.Profession getNextProfession() {
-        List<Villager.Profession> professions = Arrays.asList(Villager.Profession.values()).stream().filter(profession -> !profession.name().equals("NORMAL") && !profession.name().equals("HUSK")).collect(Collectors.toList());;
-        int nextindex = professions.indexOf(profession) + 1;
-        return nextindex == professions.size() ?
-                professions.get(0) :
-                professions.get(nextindex);
+        IVillagerHandler handler = VillagerHandlerProvider.getHandler();
+        List<String> professionNames = handler.getValidProfessionNames();
+        String currentName = profession.name();
+        int nextindex = professionNames.indexOf(currentName) + 1;
+        String nextName = nextindex >= professionNames.size() ? professionNames.get(0) : professionNames.get(nextindex);
+        return Villager.Profession.valueOf(nextName);
     }
 
     public Villager.Type getNextBiome() {
-        int nextindex = Arrays.asList(Villager.Type.values()).indexOf(biome) + 1;
-        return nextindex == Villager.Type.values().length ?
-                Villager.Type.values()[0] :
-                Villager.Type.values()[nextindex];
+        IVillagerHandler handler = VillagerHandlerProvider.getHandler();
+        List<String> biomeNames = handler.getValidBiomeNames();
+        String currentName = biome.name();
+        int nextindex = biomeNames.indexOf(currentName) + 1;
+        String nextName = nextindex >= biomeNames.size() ? biomeNames.get(0) : biomeNames.get(nextindex);
+        return Villager.Type.valueOf(nextName);
     }
 
     @Override
@@ -99,17 +102,10 @@ public class VillagerableShop extends AgeableShop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            try {
-                this.profession = Villager.Profession.valueOf(yaml.getString("Npc.Options.Profession", RyuZUInfiniteShop.VERSION >= 14 ? "NONE" : "NORMAL"));
-            } catch (IllegalArgumentException e) {
-                this.profession = Villager.Profession.FARMER;
-            }
+            IVillagerHandler handler = VillagerHandlerProvider.getHandler();
+            this.profession = Villager.Profession.valueOf(handler.resolveProfession(yaml.getString("Npc.Options.Profession", handler.getDefaultProfessionName())));
             if (RyuZUInfiniteShop.VERSION < 14) return;
-            try {
-                this.biome = Villager.Type.valueOf(yaml.getString("Npc.Options.Biome", "PLAINS"));
-            } catch (RuntimeException e) {
-                this.biome = PLAINS;
-            }
+            this.biome = Villager.Type.valueOf(handler.resolveBiome(yaml.getString("Npc.Options.Biome", handler.getDefaultBiomeName())));
             this.level = yaml.getInt("Npc.Options.Level", 1);
         });
     }

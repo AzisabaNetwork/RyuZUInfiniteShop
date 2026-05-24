@@ -32,6 +32,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.TradeUtil;
+import com.github.ryuzu.searchableinfiniteshop.api.IVillagerHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -530,9 +531,10 @@ public class Shop {
             ((HorseShop) this).setStyle(Horse.Style.valueOf(section.getString("style", "NONE")));
         }
         if (this instanceof VillagerableShop) {
-            ((VillagerableShop) this).setProfession(Villager.Profession.valueOf(section.getString(RyuZUInfiniteShop.VERSION < 14 ? "prof" : "profession", "FARMER")));
+            IVillagerHandler handler = VillagerHandlerProvider.getHandler();
+            ((VillagerableShop) this).setProfession(Villager.Profession.valueOf(handler.resolveProfession(section.getString(RyuZUInfiniteShop.VERSION < 14 ? "prof" : "profession", handler.getDefaultProfessionName()))));
             if (RyuZUInfiniteShop.VERSION < 14) return;
-            ((VillagerableShop) this).setBiome(Villager.Type.valueOf(section.getString("villagerType")));
+            ((VillagerableShop) this).setBiome(Villager.Type.valueOf(handler.resolveBiome(section.getString("villagerType"))));
             ((VillagerableShop) this).setLevel(section.getInt("villagerLevel"));
         }
         if (this instanceof ParrotShop)
