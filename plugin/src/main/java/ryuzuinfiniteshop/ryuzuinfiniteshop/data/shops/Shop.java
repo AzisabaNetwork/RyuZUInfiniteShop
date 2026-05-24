@@ -730,7 +730,7 @@ public class Shop {
     }
 
     public void respawnNPC() {
-        if (entityType == null && JavaUtil.isEmptyString(displayName)) return;
+        if (npcType != NpcType.MYTHICMOB && entityType == null && JavaUtil.isEmptyString(displayName)) return;
         if (FileUtil.isSaveBlock()) return;
         Entity npc = getEntity();
         if (npc != null && npc.isValid()) return;

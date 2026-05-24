@@ -3,9 +3,12 @@ package com.github.ryuzu.searchableinfiniteshop.v16newer;
 import com.github.ryuzu.searchableinfiniteshop.api.IMythicHandler;
 import io.lumine.mythic.api.exceptions.InvalidMobTypeException;
 import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.bukkit.events.MythicReloadedEvent;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -13,10 +16,22 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 
-public class MythicHandlerV5_2_1 implements IMythicHandler {
+public class MythicHandlerV5_2_1 implements IMythicHandler, Listener {
+    private final Consumer<Runnable> reloadProcessor;
+
+    public MythicHandlerV5_2_1(JavaPlugin plugin, Consumer<Runnable> reloadProcessor) {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        this.reloadProcessor = reloadProcessor;
+    }
+
+    @EventHandler
+    public void onReload(MythicReloadedEvent event) {
+        reload(reloadProcessor);
+    }
 
     @Override
     public void reload(Consumer<Runnable> consumer) {
+        consumer.accept(() -> {});
     }
 
     @Override

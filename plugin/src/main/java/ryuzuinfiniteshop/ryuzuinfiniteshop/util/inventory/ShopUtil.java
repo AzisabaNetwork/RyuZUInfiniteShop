@@ -380,4 +380,15 @@ public class ShopUtil {
             p.openInventory(holder.getInventory());
         }
     }
+
+    public static void reloadAllShopForMythicMobsReload(Runnable runnable) {
+        HashMap<Player, ShopHolder> holders = getAllShopInventoryViewer();
+        runnable.run();
+        for (Shop shop : getShops().values()) {
+            if (shop.getNpcType() == NpcType.MYTHICMOB) {
+                shop.respawnNPC();
+            }
+        }
+        openAllShopInventory(holders);
+    }
 }
