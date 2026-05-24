@@ -3,12 +3,8 @@ name: Publish to maven repo
 on:
   workflow_dispatch:
   push:
-    branches:
-      - 'main'
-      - 'ver/**'
-    paths-ignore:
-      - "**.md"
-      - "renovate.json"
+    tags:
+      - '*'
 
 jobs:
   build:
