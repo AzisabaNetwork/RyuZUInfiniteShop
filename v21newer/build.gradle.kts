@@ -23,12 +23,25 @@ repositories {
         name = "Lumine Releases"
         url = uri("https://mvn.lumine.io/repository/maven-public/")
     }
+    maven {
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
 }
 
 dependencies {
     api(project(":searchableinfiniteshop-api"))
     compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("io.lumine:Mythic-Dist:5.12.0")
+    testImplementation("io.lumine:Mythic-Dist:5.12.0")
+
+    testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.1")
+    testImplementation("org.mockito:mockito-core:5.14.2")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.14.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.12.1")
 }
 
 tasks.withType<JavaCompile>().configureEach {

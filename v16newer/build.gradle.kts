@@ -29,6 +29,12 @@ dependencies {
     api(project(":searchableinfiniteshop-api"))
     compileOnly("org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT")
     compileOnly("io.lumine:Mythic-Dist:5.2.1")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.1")
+    testImplementation("org.mockito:mockito-core:5.14.2")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.14.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.12.1")
 }
 
 tasks.withType<JavaCompile>().configureEach {

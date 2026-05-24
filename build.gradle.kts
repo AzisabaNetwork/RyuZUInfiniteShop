@@ -31,6 +31,12 @@ tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
 }
 
+subprojects {
+    tasks.withType<Test> {
+        useJUnitPlatform()
+    }
+}
+
 dependencies {
     api(project(":searchableinfiniteshop-plugin"))
     api(project(":searchableinfiniteshop-v21newer"))
