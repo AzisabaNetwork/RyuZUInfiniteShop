@@ -22,30 +22,24 @@ class RyuZUInfiniteShopTest {
 
     @Test
     @Order(1)
-    void versionIsParsedOnClassLoad() {
-        assertTrue(RyuZUInfiniteShop.VERSION > 0);
-    }
-
-    @Test
-    @Order(2)
     void prefixCommandIsSet() {
         assertEquals("§6[SIS]", RyuZUInfiniteShop.prefixCommand);
     }
 
     @Test
-    @Order(3)
+    @Order(2)
     void prefixPersistentIsSet() {
         assertEquals("RyuZU.Infinite.Shop.", RyuZUInfiniteShop.prefixPersistent);
     }
 
     @Test
-    @Order(4)
+    @Order(3)
     void pluginInitiallyNullBeforeEnable() {
         assertNull(RyuZUInfiniteShop.getPlugin());
     }
 
     @Test
-    @Order(5)
+    @Order(4)
     void serverMockIsNotNull() {
         assertNotNull(server);
         assertTrue(MockBukkit.isMocked());

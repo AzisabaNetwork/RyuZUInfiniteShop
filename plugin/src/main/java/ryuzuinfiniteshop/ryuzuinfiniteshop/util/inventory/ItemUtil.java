@@ -10,7 +10,6 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
 
 import javax.annotation.Nullable;
@@ -180,10 +179,7 @@ public class ItemUtil {
     public static ItemStack withCustomModelData(ItemStack item, int data) {
         ItemMeta meta = item.getItemMeta();
         if (data != -1) {
-            if (RyuZUInfiniteShop.VERSION < 14)
-                item.setDurability((short) data);
-            else
-                meta.setCustomModelData(data);
+            meta.setCustomModelData(data);
         }
         item.setItemMeta(meta);
         return item;
@@ -283,12 +279,6 @@ public class ItemUtil {
     }
 
     public static ItemStack getColoredItem(String material) {
-        if (!(RyuZUInfiniteShop.VERSION < 13 && (material.contains("STAINED_GLASS_PANE") || material.contains("WOOL"))))
-            return XMaterial.matchXMaterial(material).get().parseItem();
-        String result = material;
-        Optional<DyeColor> color = Arrays.stream(DyeColor.values()).filter(c -> material.contains(c.name())).findFirst();
-        if (color.isPresent())
-            result = material.replace(color.get().name() + "_", "");
-        return new ItemStack(Material.valueOf(result), 1, color.map(Enum::ordinal).orElse(0).shortValue());
+        return XMaterial.matchXMaterial(material).get().parseItem();
     }
 }

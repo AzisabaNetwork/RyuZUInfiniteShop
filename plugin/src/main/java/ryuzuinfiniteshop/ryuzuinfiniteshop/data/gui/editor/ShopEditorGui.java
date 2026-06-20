@@ -7,7 +7,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopMode;
@@ -157,7 +156,6 @@ public class ShopEditorGui extends ShopGui {
         setPattern(inv);
         setAxolotlType(inv);
         setDerp(inv);
-        if (RyuZUInfiniteShop.VERSION < 14) return;
         setBiome(inv);
         setLevel(inv);
     }

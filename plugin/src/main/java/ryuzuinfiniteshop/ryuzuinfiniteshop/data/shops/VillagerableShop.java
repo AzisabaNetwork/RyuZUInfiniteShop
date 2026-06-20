@@ -9,10 +9,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.ZombieVillager;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VillagerHandlerProvider;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.XMaterial;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,12 +36,7 @@ public class VillagerableShop extends AgeableShop {
         Entity npc = getEntity();
         if (npc == null) return;
         if (npc instanceof Villager) {
-            if(RyuZUInfiniteShop.VERSION < 14){
-                ((Villager) npc).setProfession(Villager.Profession.valueOf(profession.name().equals("NORMAL") || profession.name().equals("HUSK") ? "FARMER" : profession.name()));
-//                setVillagerCareer((Villager) npc, profession.name());
-            }
-            else
-                ((Villager) npc).setProfession(profession);
+            ((Villager) npc).setProfession(profession);
             ((Villager) npc).setRecipes(new ArrayList<>());
         }
         else
@@ -93,7 +86,6 @@ public class VillagerableShop extends AgeableShop {
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
         return super.getSaveYamlProcess().andThen(yaml -> {
             yaml.set("Npc.Options.Profession", JavaUtil.getOrDefault(profession, Villager.Profession.FARMER).toString());
-            if (RyuZUInfiniteShop.VERSION < 14) return;
             yaml.set("Npc.Options.Biome", JavaUtil.getOrDefault(biome, PLAINS).toString());
             yaml.set("Npc.Options.Level", level);
         });
@@ -104,7 +96,6 @@ public class VillagerableShop extends AgeableShop {
         return super.getLoadYamlProcess().andThen(yaml -> {
             IVillagerHandler handler = VillagerHandlerProvider.getHandler();
             this.profession = Villager.Profession.valueOf(handler.resolveProfession(yaml.getString("Npc.Options.Profession", handler.getDefaultProfessionName())));
-            if (RyuZUInfiniteShop.VERSION < 14) return;
             this.biome = Villager.Type.valueOf(handler.resolveBiome(yaml.getString("Npc.Options.Biome", handler.getDefaultBiomeName())));
             this.level = yaml.getInt("Npc.Options.Level", 1);
         });
@@ -115,56 +106,42 @@ public class VillagerableShop extends AgeableShop {
         super.respawnNPC();
         if (isEditableNpc()) {
             setProfession(profession);
-            if (RyuZUInfiniteShop.VERSION < 14) return;
             setBiome(biome);
             setLevel(level);
         }
     }
 
     public Material getJobBlockMaterial() {
-        if (RyuZUInfiniteShop.VERSION >= 14) {
-            if (profession.equals(NITWIT)) {
-                return Material.GREEN_STAINED_GLASS;
-            } else if (profession.equals(ARMORER)) {
-                return Material.BLAST_FURNACE;
-            } else if (profession.equals(BUTCHER)) {
-                return Material.SMOKER;
-            } else if (profession.equals(CARTOGRAPHER)) {
-                return Material.CARTOGRAPHY_TABLE;
-            } else if (profession.equals(CLERIC)) {
-                return Material.BREWING_STAND;
-            } else if (profession.equals(FARMER)) {
-                return Material.COMPOSTER;
-            } else if (profession.equals(FISHERMAN)) {
-                return Material.BARREL;
-            } else if (profession.equals(FLETCHER)) {
-                return Material.FLETCHING_TABLE;
-            } else if (profession.equals(LEATHERWORKER)) {
-                return Material.CAULDRON;
-            } else if (profession.equals(LIBRARIAN)) {
-                return Material.LECTERN;
-            } else if (profession.equals(MASON)) {
-                return Material.STONECUTTER;
-            } else if (profession.equals(SHEPHERD)) {
-                return Material.LOOM;
-            } else if (profession.equals(TOOLSMITH)) {
-                return Material.SMITHING_TABLE;
-            } else if (profession.equals(WEAPONSMITH)) {
-                return Material.GRINDSTONE;
-            }
-            return Material.WHITE_STAINED_GLASS;
-        } else {
-            return switch (profession.name()) {
-                case "NORMAL" -> Material.DIRT;
-                case "FARMER" -> Material.WHEAT;
-                case "LIBRARIAN" -> Material.BOOKSHELF;
-                case "PRIEST" -> Material.ROTTEN_FLESH;
-                case "BLACKSMITH" -> Material.ANVIL;
-                case "BUTCHER" -> XMaterial.matchXMaterial("PORKCHOP").get().parseMaterial();
-                case "NITWIT" -> Material.SLIME_BALL;
-                default -> Material.STONE;
-            };
+        if (profession.equals(NITWIT)) {
+            return Material.GREEN_STAINED_GLASS;
+        } else if (profession.equals(ARMORER)) {
+            return Material.BLAST_FURNACE;
+        } else if (profession.equals(BUTCHER)) {
+            return Material.SMOKER;
+        } else if (profession.equals(CARTOGRAPHER)) {
+            return Material.CARTOGRAPHY_TABLE;
+        } else if (profession.equals(CLERIC)) {
+            return Material.BREWING_STAND;
+        } else if (profession.equals(FARMER)) {
+            return Material.COMPOSTER;
+        } else if (profession.equals(FISHERMAN)) {
+            return Material.BARREL;
+        } else if (profession.equals(FLETCHER)) {
+            return Material.FLETCHING_TABLE;
+        } else if (profession.equals(LEATHERWORKER)) {
+            return Material.CAULDRON;
+        } else if (profession.equals(LIBRARIAN)) {
+            return Material.LECTERN;
+        } else if (profession.equals(MASON)) {
+            return Material.STONECUTTER;
+        } else if (profession.equals(SHEPHERD)) {
+            return Material.LOOM;
+        } else if (profession.equals(TOOLSMITH)) {
+            return Material.SMITHING_TABLE;
+        } else if (profession.equals(WEAPONSMITH)) {
+            return Material.GRINDSTONE;
         }
+        return Material.WHITE_STAINED_GLASS;
     }
 
     public Material getBiomeMaterial() {

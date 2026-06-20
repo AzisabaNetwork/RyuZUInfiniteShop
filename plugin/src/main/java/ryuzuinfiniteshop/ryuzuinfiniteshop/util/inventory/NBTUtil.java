@@ -1,7 +1,6 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory;
 
 import com.mojang.authlib.GameProfile;
-import com.saicone.rtag.RtagItem;
 import lombok.NonNull;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
@@ -17,108 +16,49 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.UUID;
 
 public class NBTUtil {
     private static Method metaSetProfileMethod;
     private static Field metaProfileField;
-    private static final HashMap<UUID, String> entityTags = new HashMap<>();
 
     public static Entity setNMSTag(Entity ent, String key, String value) {
-        if (RyuZUInfiniteShop.VERSION < 14) {
-            entityTags.put(ent.getUniqueId(), value);
-//            return RtagEntity.edit(ent, tag -> {
-//                tag.set(value, "__extraData", RyuZUInfiniteShop.prefixPersistent + key);
-//                tag.update();
-//                return tag.load();
-//            });
-//            NBT.modify(ent, nbt -> {
-//                nbt.setString(RyuZUInfiniteShop.prefixPersistent + key, value);
-//            });
-        } else {
-            PersistentDataContainer container = ent.getPersistentDataContainer();
-            container.set(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING, value);
-        }
+        PersistentDataContainer container = ent.getPersistentDataContainer();
+        container.set(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING, value);
         return ent;
     }
 
     public static String getNMSStringTag(Entity ent, String key) {
         if (ent instanceof Player) return null;
-        if (RyuZUInfiniteShop.VERSION < 14) {
-            return entityTags.get(ent.getUniqueId());
-//            return RtagEntity.edit(ent, tag -> {
-//                return tag.getOptional("__extraData", RyuZUInfiniteShop.prefixPersistent + key).asString(null);
-//            });
-//            return NBT.get(ent, nbt -> {
-//                return nbt.getString(RyuZUInfiniteShop.prefixPersistent + key);
-//            });
-        } else {
-            String value = ent.getPersistentDataContainer().get(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING);
-            return value == null || value.equalsIgnoreCase("") ? null : value;
-        }
+        String value = ent.getPersistentDataContainer().get(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING);
+        return value == null || value.equalsIgnoreCase("") ? null : value;
     }
 
     public static void removeNMSTag(Entity ent) {
-        if (RyuZUInfiniteShop.VERSION < 14)
-            entityTags.remove(ent.getUniqueId());
+        // On modern versions entity tags are stored in PersistentDataContainer; nothing to remove here without a key.
     }
 
     public static ItemStack setNMSTag(@NonNull ItemStack item, String key, String value) {
-        if (RyuZUInfiniteShop.VERSION < 14) {
-            return RtagItem.edit(item, tag -> {
-                tag.set(value, "__extraData", RyuZUInfiniteShop.prefixPersistent + key);
-                return tag.load();
-            });
-//            NBT.modify(item, nbt -> {
-//                nbt.setString(RyuZUInfiniteShop.prefixPersistent + key, value);
-//            });
-        } else {
-            ItemMeta meta = item.getItemMeta();
-            PersistentDataContainer container = meta.getPersistentDataContainer();
-            container.set(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING, value);
-            item.setItemMeta(meta);
-        }
+        ItemMeta meta = item.getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        container.set(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING, value);
+        item.setItemMeta(meta);
         return item;
     }
 
     public static ItemStack setNMSTag(ItemStack item, HashMap<String, String> map) {
         if (ItemUtil.isAir(item) || !item.hasItemMeta()) return null;
-        if (RyuZUInfiniteShop.VERSION < 14) {
-            return RtagItem.edit(item, tag -> {
-                for (String key : map.keySet())
-                    tag.set(map.get(key), "__extraData", RyuZUInfiniteShop.prefixPersistent + key);
-                return tag.load();
-            });
-//            NBT.modify(item, nbt -> {
-//                for (String key : map.keySet())
-//                    nbt.setString(RyuZUInfiniteShop.prefixPersistent + key, map.get(key));
-//            });
-        } else {
-            ItemMeta meta = item.getItemMeta();
-            PersistentDataContainer container = meta.getPersistentDataContainer();
-            for (String key : map.keySet())
-                container.set(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING, map.get(key));
-            item.setItemMeta(meta);
-        }
+        ItemMeta meta = item.getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        for (String key : map.keySet())
+            container.set(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING, map.get(key));
+        item.setItemMeta(meta);
         return item;
     }
 
     public static String getNMSStringTag(ItemStack item, String key) {
         if (ItemUtil.isAir(item) || !item.hasItemMeta()) return null;
-        if (RyuZUInfiniteShop.VERSION < 14) {
-            return RtagItem.edit(item, tag -> {
-                return tag.getOptional("__extraData", RyuZUInfiniteShop.prefixPersistent + key).asString(null);
-            });
-//            return NBT.get(item, nbt -> {
-//                return nbt.getString(RyuZUInfiniteShop.prefixPersistent + key);
-//            });
-        } else {
-            String value = item.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING);
-            return value == null || value.equalsIgnoreCase("") ? null : value;
-//            return RtagItem.edit(item, tag -> {
-//                return tag.getOptional("PublicBukkitValues", RyuZUInfiniteShop.class.getName().toLowerCase() + ":" + key).asString(null);
-//            });
-        }
+        String value = item.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(RyuZUInfiniteShop.getPlugin(), key), PersistentDataType.STRING);
+        return value == null || value.equalsIgnoreCase("") ? null : value;
     }
 
 

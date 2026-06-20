@@ -16,7 +16,6 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.material.Colorable;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ModeHolder;
@@ -143,7 +142,7 @@ public class ShopUtil {
                     if (Config.overwriteConverting) {
                         shop.setNpcType(type.name());
                         shop.setDisplayName(config.getConfigurationSection(key).getString("name", "").isEmpty() ? "" : ChatColor.GREEN + config.getConfigurationSection(key).getString("name"));
-                        shop.setNpcMetaFromShopkeepersConfiguration(config.getConfigurationSection(RyuZUInfiniteShop.VERSION < 14 ? key : base + "object"));
+                        shop.setNpcMetaFromShopkeepersConfiguration(config.getConfigurationSection(base + "object"));
                         shop.setTrades(trades);
                         reloadShop(shop);
                     } else
@@ -236,9 +235,9 @@ public class ShopUtil {
             return new DyeableShop(location, type, config);
         if (entityType.equals(EntityType.PARROT))
             return new ParrotShop(location, type, config);
-        if (RyuZUInfiniteShop.VERSION >= 13 && entityType.equals(EntityType.CAT))
+        if (entityType.equals(EntityType.CAT))
             return new CatShop(location, type, config);
-        if (RyuZUInfiniteShop.VERSION >= 18 && entityType.equals(EntityType.AXOLOTL))
+        if (entityType.equals(EntityType.AXOLOTL))
             return new AxolotlShop(location, type, config);
         if (entityType.equals(EntityType.SNOW_GOLEM))
             return new SnowmanShop(location, type, config);
@@ -248,7 +247,7 @@ public class ShopUtil {
             return new HorseShop(location, type, config);
         if (Ageable.class.isAssignableFrom(entityType.getEntityClass()))
             return new AgeableShop(location, type, config);
-        if (RyuZUInfiniteShop.VERSION >= 13 && entityType.equals(EntityType.TROPICAL_FISH))
+        if (entityType.equals(EntityType.TROPICAL_FISH))
             return new TropicalFishShop(location, type, config);
         return new Shop(location, type, config);
     }

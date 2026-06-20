@@ -5,7 +5,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.editor.ShopEditorGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopMode;
@@ -54,10 +53,8 @@ public class ChangeIndividualSettingsListener implements Listener {
         changeCatType(holder, event.getSlot());
         changeRabbitType(holder, event.getSlot());
         changeAxolotlType(holder, event.getSlot());
-        if (RyuZUInfiniteShop.VERSION >= 14) {
-            changeBiome(holder, event.getSlot());
-            changeLevel(holder, event.getSlot());
-        }
+        changeBiome(holder, event.getSlot());
+        changeLevel(holder, event.getSlot());
 
         //音を出す
         SoundUtil.playClickShopSound(p);

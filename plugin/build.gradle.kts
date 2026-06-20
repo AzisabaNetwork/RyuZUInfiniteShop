@@ -34,17 +34,14 @@ repositories {
 }
 
 dependencies {
-    implementation("com.saicone.rtag:rtag:1.4.2")
-    implementation("com.saicone.rtag:rtag-entity:1.4.2")
-    implementation("com.saicone.rtag:rtag-item:1.4.2")
 //    implementation("de.tr7zw:item-nbt-api:2.12.0")
     api("com.google.guava:guava:31.1-jre")
     api(project(":searchableinfiniteshop-v21newer"))
-    api(project(":searchableinfiniteshop-v16newer"))
-    api(project(":searchableinfiniteshop-v16older"))
     api(project(":searchableinfiniteshop-commandlib"))
     api(project(":searchableinfiniteshop-api"))
     compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("io.lumine:Mythic-Dist:5.12.0")
+    testImplementation("io.lumine:Mythic-Dist:5.12.0")
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")
     compileOnly("com.mojang:authlib:1.5.21")
@@ -68,8 +65,6 @@ dependencies {
 
 tasks {
     shadowJar {
-        // Relocate rtag (DO NOT IGNORE THIS)
-        relocate("com.saicone.rtag", "${project.group}.libs.rtag")
         // Exclude unused classes (optional)
         minimize()
     }

@@ -2,7 +2,6 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop;
 
 import com.github.ryuzu.ryuzucommandsgenerator.RyuZUCommandsGenerator;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Listener;
@@ -39,12 +38,10 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
     private static Logger logger;
     public static final String prefixCommand = ChatColor.GOLD + "[SIS]";
     public static final String prefixPersistent = "RyuZU.Infinite.Shop.";
-    public static final int VERSION = Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1]);
 
     @Override
     public void onEnable() {
         // Plugin startup logic
-        getLogger().info("Detected version is " + VERSION);
         plugin = this;
         logger = getLogger();
         MythicInstanceProvider.setInstance();

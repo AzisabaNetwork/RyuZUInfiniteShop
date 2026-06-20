@@ -152,7 +152,9 @@ public class Shop {
             updateTradeContents();
 
             if (shopkeepersConfig == null) return;
-            setNpcMetaFromShopkeepersConfiguration(RyuZUInfiniteShop.VERSION < 14 ? shopkeepersConfig : shopkeepersConfig.getConfigurationSection("object"));
+            ConfigurationSection objectSection = shopkeepersConfig.getConfigurationSection("object");
+            if (objectSection == null) objectSection = shopkeepersConfig;
+            setNpcMetaFromShopkeepersConfiguration(objectSection);
             setDisplayName(shopkeepersConfig.getString("name", "").isEmpty() ? "" : ChatColor.GREEN + shopkeepersConfig.getString("name"));
             shopkeepersConfig = null;
         };
@@ -565,7 +567,6 @@ public class Shop {
         livnpc.setCollidable(false);
         livnpc.setRemoveWhenFarAway(true);
         livnpc.setPersistent(false);
-//        if(RyuZUInfiniteShop.VERSION < 14) NBTBuilder.setNoAI(true);
 //        NBTBuilder.setPersistenceRequired(true);
     }
 

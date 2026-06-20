@@ -2,11 +2,10 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.util.effect;
 
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 
 public class SoundUtil {
     public static void playCloseShopSound(Player p) {
-        p.playSound(p.getLocation(), RyuZUInfiniteShop.VERSION > 12 ? Sound.BLOCK_ENDER_CHEST_CLOSE : Sound.valueOf("BLOCK_ENDERCHEST_CLOSE"), 1, 1);
+        p.playSound(p.getLocation(), Sound.BLOCK_ENDER_CHEST_CLOSE, 1, 1);
     }
 
     public static void playClickShopSound(Player p) {
