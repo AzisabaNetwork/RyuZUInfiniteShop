@@ -21,6 +21,8 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.listener.editor.system.*;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.listener.player.OpenShopListener;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.listener.player.SearchTradeListener;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.listener.player.ShopListListener;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.migration.MigrationResult;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.migration.ShopMigrationService;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.*;
 
 import java.io.File;
@@ -51,6 +53,10 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
         registerEvents();
         ConfigurationSerialization.registerClass(MythicItem.class);
         ConfigurationSerialization.registerClass(TradeOption.class);
+        MigrationResult migrationResult = ShopMigrationService.migrateAll(null);
+        if (migrationResult.getMigrated() > 0 || migrationResult.getFailed() > 0) {
+            getLogger().info("Shop migration complete: " + migrationResult.getMigrated() + " migrated, " + migrationResult.getSkipped() + " skipped, " + migrationResult.getFailed() + " failed.");
+        }
         FileUtil.loadAll();
         RyuZUCommandsGenerator.initialize(this, LanguageKey.COMMAND_ERROR_PERMISSION.getMessage());
     }

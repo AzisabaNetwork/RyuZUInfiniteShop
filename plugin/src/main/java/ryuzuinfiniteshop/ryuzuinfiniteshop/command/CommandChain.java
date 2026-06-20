@@ -17,6 +17,8 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.ShopListGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopMode;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.migration.MigrationResult;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.migration.ShopMigrationService;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.*;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.effect.SoundUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class CommandChain {
     public static void registerCommand() {
-        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "reload-single", "load", "save", "limit");
+        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "reload-single", "load", "save", "limit", "migrate");
 
         CommandsGenerator.registerCommand(
                         "sis",
@@ -50,6 +52,7 @@ public class CommandChain {
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " save " + ChatColor.GOLD + LanguageKey.COMMAND_SAVE_ALL_DATA.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " searchability [true/false] [world] " + ChatColor.GOLD + LanguageKey.COMMAND_SET_SEARCHABLE.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " limit [increase/decrease/set] [player] [value] " + ChatColor.GOLD + LanguageKey.COMMAND_CHANGE_TRADE_LIMIT.getMessage());
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " migrate " + ChatColor.GOLD + LanguageKey.COMMAND_MIGRATE_SHOPS.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "[arg] " + ChatColor.GOLD + LanguageKey.COMMAND_ARGUMENT_REQUIRED.getMessage() + ", " + ChatColor.BLUE + "<arg> " + ChatColor.GOLD + LanguageKey.COMMAND_ARGUMENT_OPTIONAL.getMessage());
                             }
                             data.sendMessage("§a§l-------§e§l==============================§a§l-------");
@@ -84,6 +87,16 @@ public class CommandChain {
         CommandsGenerator.registerCommand(
                 "sis.save",
                 data -> FileUtil.saveAll()
+        ).permissions("sis.op").tabCompleteConditon(data -> !FileUtil.isSaveBlock(data));
+
+        CommandsGenerator.registerCommand(
+                "sis.migrate",
+                data -> {
+                    MigrationResult result = ShopMigrationService.migrateAll(data.getSender());
+                    if (result.getMigrated() == 0 && result.getFailed() == 0) {
+                        data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_MIGRATION_NOT_NEEDED.getMessage());
+                    }
+                }
         ).permissions("sis.op").tabCompleteConditon(data -> !FileUtil.isSaveBlock(data));
 
         CommandsGenerator.registerCommand(

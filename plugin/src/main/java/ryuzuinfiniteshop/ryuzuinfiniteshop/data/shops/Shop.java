@@ -534,10 +534,10 @@ public class Shop {
         }
         if (this instanceof VillagerableShop) {
             IVillagerHandler handler = VillagerHandlerProvider.getHandler();
-            ((VillagerableShop) this).setProfession(Villager.Profession.valueOf(handler.resolveProfession(section.getString(RyuZUInfiniteShop.VERSION < 14 ? "prof" : "profession", handler.getDefaultProfessionName()))));
-            if (RyuZUInfiniteShop.VERSION < 14) return;
-            ((VillagerableShop) this).setBiome(Villager.Type.valueOf(handler.resolveBiome(section.getString("villagerType"))));
-            ((VillagerableShop) this).setLevel(section.getInt("villagerLevel"));
+            String professionName = section.getString("profession", section.getString("prof", handler.getDefaultProfessionName()));
+            ((VillagerableShop) this).setProfession(Villager.Profession.valueOf(handler.resolveProfession(professionName)));
+            ((VillagerableShop) this).setBiome(Villager.Type.valueOf(handler.resolveBiome(section.getString("villagerType", handler.getDefaultBiomeName()))));
+            ((VillagerableShop) this).setLevel(section.getInt("villagerLevel", 1));
         }
         if (this instanceof ParrotShop)
             ((ParrotShop) this).setColor(Parrot.Variant.valueOf(section.getString("parrotVariant", "RED")));
@@ -735,7 +735,6 @@ public class Shop {
         if (FileUtil.isSaveBlock()) return;
         Entity npc = getEntity();
         if (npc != null && npc.isValid()) return;
-        if (npc != null && !npc.isDead() && RyuZUInfiniteShop.VERSION < 14) return;
         if (!location.getWorld().isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) return;
         removeNPC();
 
