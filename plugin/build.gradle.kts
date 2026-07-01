@@ -31,6 +31,10 @@ repositories {
     maven {
         url = uri("https://maven.enginehub.org/repo/")
     }
+    maven {
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
 }
 
 dependencies {
@@ -51,6 +55,7 @@ dependencies {
         exclude("*", "*")
     }
 
+    // Paper API 1.21.11-R0.1-SNAPSHOT removed from repo; use latest alpha build
     testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0") {
         exclude(group = "org.junit.jupiter")
