@@ -2,7 +2,7 @@ name: Run Tests
 
 on:
   push:
-    branches: [main, "ver/**", "feat/**"]
+    branches: [main, "ver/**"]
   pull_request:
     branches: [main, "feat/**"]
 
@@ -17,8 +17,8 @@ jobs:
       matrix:
         java: [21]
         module:
-          - ':searchableinfiniteshop-plugin'
-          - ':searchableinfiniteshop-v21newer'
+          - ":searchableinfiniteshop-plugin"
+          - ":searchableinfiniteshop-v21newer"
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
