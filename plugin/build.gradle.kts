@@ -56,6 +56,7 @@ dependencies {
     }
 
     // Paper API 1.21.11-R0.1-SNAPSHOT removed from repo; use latest alpha build
+    // Paper API includes Spigot API; Spigot's NamespacedKey conflicts with Paper's
     testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0") {
         exclude(group = "org.junit.jupiter")

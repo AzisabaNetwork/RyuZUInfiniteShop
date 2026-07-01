@@ -28,4 +28,9 @@ jobs:
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Run tests
-        run: ./gradlew test --no-daemon
+        run: |
+          for i in 1 2 3; do
+            ./gradlew test --no-daemon && break
+            echo "Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done

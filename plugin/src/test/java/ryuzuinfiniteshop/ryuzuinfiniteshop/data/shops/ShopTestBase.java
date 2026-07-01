@@ -55,8 +55,8 @@ public abstract class ShopTestBase {
         var plugin = org.mockito.Mockito.mock(RyuZUInfiniteShop.class);
         org.mockito.Mockito.when(plugin.getDataFolder()).thenReturn(tempDir.toFile());
         org.mockito.Mockito.when(plugin.getServer()).thenReturn(server);
-        org.mockito.Mockito.when(plugin.getName()).thenReturn("SearchableInfiniteShop");
         org.mockito.Mockito.when(plugin.namespace()).thenReturn("searchableinfiniteshop");
+        org.mockito.Mockito.when(plugin.getName()).thenReturn("SearchableInfiniteShop");
 
         var field = RyuZUInfiniteShop.class.getDeclaredField("plugin");
         field.setAccessible(true);
