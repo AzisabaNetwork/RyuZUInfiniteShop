@@ -13,38 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    strategy:
-      matrix:
-        java: [21]
-        module:
-          # Mythic-Dist 5.12.0 is not publicly resolvable on CI
-          # v21newer (MythicMobs compat) requires it; test plugin only
-          - ":searchableinfiniteshop-plugin"
-
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: temurin
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-
-      - name: Run tests for ${{ matrix.module }}
-        env:
-          MODULE: ${{ matrix.module }}
-        run: ./gradlew ${MODULE}:test --no-daemon
-
-  test-all:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: test
-
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -59,5 +27,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
-      - name: Run all tests
-        run: ./gradlew test --no-daemon
+      # Mythic-Dist 5.12.0 is not publicly resolvable on CI (Lumine repo).
+      # The v21newer module (MythicMobs compat) requires it and can't compile.
+      # Build + test only the plugin module; v21newer is tested in its own workflow.
+      - name: Run plugin tests
+        run: ./gradlew :searchableinfiniteshop-plugin:test --no-daemon
