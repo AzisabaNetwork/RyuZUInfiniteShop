@@ -13,9 +13,9 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;
 
 //NPCの方向を変更する
-public class ChangeNpcDirecationListener implements Listener {
+public class ChangeNpcDirectionListener implements Listener {
     @EventHandler
-    public void changeNPCDirecation(InventoryClickEvent event) {
+    public void changeNPCDirection(InventoryClickEvent event) {
         //インベントリがショップなのかチェック
         ShopHolder holder = ShopUtil.getShopHolder(event);
         if (holder == null) return;
@@ -31,7 +31,7 @@ public class ChangeNpcDirecationListener implements Listener {
         if (slot != 4 * 9 + 7) return;
 
         //NPCの向きを45度回す
-        shop.changeNPCDirecation();
+        shop.changeNPCDirection();
 
         //音を出す
         SoundUtil.playClickShopSound(p);
