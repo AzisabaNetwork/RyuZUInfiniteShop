@@ -46,6 +46,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.46")
     compileOnly("com.mojang:authlib:1.5.21")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
+    testImplementation("com.github.MilkBowl:VaultAPI:1.7")
     compileOnly("net.citizensnpcs:citizens-main:2.0.30-SNAPSHOT") {
         exclude("*", "*")
     }
