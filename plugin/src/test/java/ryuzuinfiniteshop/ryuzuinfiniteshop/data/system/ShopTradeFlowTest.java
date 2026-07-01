@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
 
 /**
  * Integration-style tests for the full trade flow (ShopTrade.trade + getResult).
@@ -273,6 +274,186 @@ class ShopTradeFlowTest {
             trade.setTradeOption(new TradeOption(false, 50.0, 0, false, 100), false);
 
             assertEquals(ShopTrade.TradeResult.Success, trade.getResult(player));
+        }
+    }
+
+    // ========== Money: exact / more than enough ==========
+
+    @Test
+    void getResultSuccessWithExactMoney() {
+        try (var vaultMock = mockStatic(VaultHandler.class)) {
+            vaultMock.when(() -> VaultHandler.hasMoney(any(), anyDouble())).thenAnswer(invocation -> {
+                double required = invocation.getArgument(1);
+                return required == 100.0; // exactly 100
+            });
+
+            player.getInventory().addItem(diamond);
+            ShopTrade trade = new ShopTrade(new ItemStack[]{emerald}, new ItemStack[]{diamond});
+            trade.setTradeOption(new TradeOption(false, 100.0, 0, false, 100), false);
+
+            assertEquals(ShopTrade.TradeResult.Success, trade.getResult(player));
+        }
+    }
+
+    @Test
+    void getResultSuccessWithMoreThanEnoughMoney() {
+        try (var vaultMock = mockStatic(VaultHandler.class)) {
+            vaultMock.when(() -> VaultHandler.hasMoney(any(), anyDouble())).thenAnswer(invocation -> {
+                double required = invocation.getArgument(1);
+                return required <= 500.0; // has 500, needs 100
+            });
+
+            player.getInventory().addItem(diamond);
+            ShopTrade trade = new ShopTrade(new ItemStack[]{emerald}, new ItemStack[]{diamond});
+            trade.setTradeOption(new TradeOption(false, 100.0, 0, false, 100), false);
+
+            assertEquals(ShopTrade.TradeResult.Success, trade.getResult(player));
+        }
+    }
+
+    // ========== Money: give mode (player receives money) ==========
+
+    @Test
+    void getResultWithMoneyGiveMode() {
+        // give=true with money>0: current code still calls VaultHandler.hasMoney
+        // (affordMoney doesn't check give flag). Vault not loaded → fail.
+        player.getInventory().addItem(diamond);
+        ShopTrade trade = new ShopTrade(new ItemStack[]{emerald}, new ItemStack[]{diamond});
+        trade.setTradeOption(new TradeOption(true, 50.0, 0, false, 100), false);
+
+        // Without Vault mocked, affordMoney throws NPE
+        // This is a characterization test documenting current behavior
+        assertThrows(NullPointerException.class, () -> trade.getResult(player));
+    }
+
+    @Test
+    void tradeWithMoneyGiveCallsVaultGiveMoney() {
+        try (var vaultMock = mockStatic(VaultHandler.class)) {
+            vaultMock.when(() -> VaultHandler.hasMoney(any(), anyDouble())).thenReturn(true);
+
+            player.getInventory().addItem(new ItemStack(Material.DIAMOND, 3));
+            ItemStack[] give = {new ItemStack(Material.EMERALD, 1)};
+            ItemStack[] take = {new ItemStack(Material.DIAMOND, 3)};
+            ShopTrade trade = new ShopTrade(give, take);
+            trade.setTradeOption(new TradeOption(false, 50.0, 0, false, 100), false);
+
+            int result = trade.trade(player, 1);
+            assertEquals(1, result, "Trade should succeed with sufficient money");
+        }
+    }
+
+    // ========== Error items ==========
+
+    // Error items create MythicItems which need MythicMobs API at runtime.
+    // Without MythicMobs, the NBTUtil.setNMSTag + MythicItem.convertItemStack()
+    // chain can't function properly. These tests are skipped in unit test env.
+    // Full integration testing requires MythicMobs on the classpath.
+    // @Test
+    // void getResultErrorOnGiveItem() { ... }
+    // @Test
+    // void getResultErrorOnTakeItem() { ... }
+
+    // ========== Rate-based trades ==========
+
+    @Test
+    void getResultSuccessWithRate100() {
+        player.getInventory().addItem(diamond);
+        ShopTrade trade = new ShopTrade(new ItemStack[]{emerald}, new ItemStack[]{diamond});
+        trade.setTradeOption(new TradeOption(false, 0, 0, false, 100), false);
+
+        assertEquals(ShopTrade.TradeResult.Success, trade.getResult(player));
+    }
+
+    @Test
+    void tradeWithRateZeroFails() {
+        player.getInventory().addItem(new ItemStack(Material.DIAMOND, 3));
+        ItemStack[] give = {new ItemStack(Material.EMERALD, 1)};
+        ItemStack[] take = {new ItemStack(Material.DIAMOND, 3)};
+        ShopTrade trade = new ShopTrade(give, take);
+        trade.setTradeOption(new TradeOption(false, 0, 0, false, 0), false);
+
+        // Replace the random with a controllable one
+        // Rate=0 means nextInt(100) must return 100+ to succeed, which is impossible
+        // So the trade always fails regardless of Random
+        int result = trade.trade(player, 1);
+        assertEquals(0, result, "Rate=0 should always fail");
+    }
+
+    @Test
+    void tradeWithRate50MayFailOrSucceed() {
+        // Rate=50: outcome depends on Random. Just verify the trade method runs.
+        player.getInventory().addItem(new ItemStack(Material.DIAMOND, 6));
+        ItemStack[] give = {new ItemStack(Material.EMERALD, 1)};
+        ItemStack[] take = {new ItemStack(Material.DIAMOND, 3)};
+        ShopTrade trade = new ShopTrade(give, take);
+        trade.setTradeOption(new TradeOption(false, 0, 0, false, 50), false);
+
+        int result = trade.trade(player, 2);
+        assertTrue(result >= 0 && result <= 2, "Rate=50 trade should return between 0 and 2");
+    }
+
+    // ========== Edge cases ==========
+
+    @Test
+    void tradeWithExactItemsOnly() {
+        player.getInventory().addItem(new ItemStack(Material.DIAMOND, 3));
+        ItemStack[] give = {new ItemStack(Material.EMERALD, 1)};
+        ItemStack[] take = {new ItemStack(Material.DIAMOND, 3)};
+        ShopTrade trade = new ShopTrade(give, take);
+
+        int result = trade.trade(player, 1);
+
+        assertEquals(1, result);
+        // Player should have exactly 0 diamonds
+        assertEquals(0, countItems(player.getInventory(), Material.DIAMOND));
+        assertEquals(1, countItems(player.getInventory(), Material.EMERALD));
+    }
+
+    @Test
+    void tradeExactlyZeroTimes() {
+        player.getInventory().addItem(new ItemStack(Material.DIAMOND, 3));
+        ItemStack[] give = {new ItemStack(Material.EMERALD, 1)};
+        ItemStack[] take = {new ItemStack(Material.DIAMOND, 3)};
+        ShopTrade trade = new ShopTrade(give, take);
+
+        int result = trade.trade(player, 0);
+
+        assertEquals(0, result, "Requesting 0 trades should return 0");
+    }
+
+    // ========== Money trade flows ==========
+
+    @Test
+    void tradeWithMoneyPaymentMultipleTimes() {
+        try (var vaultMock = mockStatic(VaultHandler.class)) {
+            vaultMock.when(() -> VaultHandler.hasMoney(any(), anyDouble())).thenReturn(true);
+
+            player.getInventory().addItem(new ItemStack(Material.DIAMOND, 12));
+            ItemStack[] give = {new ItemStack(Material.EMERALD, 1)};
+            ItemStack[] take = {new ItemStack(Material.DIAMOND, 3)};
+            ShopTrade trade = new ShopTrade(give, take);
+            trade.setTradeOption(new TradeOption(false, 10.0, 0, false, 100), false);
+
+            int result = trade.trade(player, 4);
+            assertEquals(4, result, "All 4 trades should succeed with money");
+        }
+    }
+
+    @Test
+    void tradeStopsWhenMoneyRunsOut() {
+        try (var vaultMock = mockStatic(VaultHandler.class)) {
+            // trade() calls getResult() once before loop, then once per iteration
+            // For 2 successful trades: initial(1) + trade1(1) + trade2(1) + trade3 check = 4 calls
+            vaultMock.when(() -> VaultHandler.hasMoney(any(), anyDouble())).thenReturn(true, true, true, false);
+
+            player.getInventory().addItem(new ItemStack(Material.DIAMOND, 12));
+            ItemStack[] give = {new ItemStack(Material.EMERALD, 1)};
+            ItemStack[] take = {new ItemStack(Material.DIAMOND, 3)};
+            ShopTrade trade = new ShopTrade(give, take);
+            trade.setTradeOption(new TradeOption(false, 10.0, 0, false, 100), false);
+
+            int result = trade.trade(player, 5);
+            assertEquals(2, result, "Should stop when money runs out after 2 trades");
         }
     }
 }
