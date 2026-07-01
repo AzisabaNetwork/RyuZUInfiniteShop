@@ -27,8 +27,5 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
-      # Mythic-Dist 5.12.0 is not publicly resolvable on CI (Lumine repo).
-      # The v21newer module (MythicMobs compat) requires it and can't compile.
-      # Build + test only the plugin module; v21newer is tested in its own workflow.
-      - name: Run plugin tests
-        run: ./gradlew :searchableinfiniteshop-plugin:test --no-daemon
+      - name: Run tests
+        run: ./gradlew test --no-daemon
