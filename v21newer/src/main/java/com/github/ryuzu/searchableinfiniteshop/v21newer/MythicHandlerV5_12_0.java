@@ -43,7 +43,7 @@ public class MythicHandlerV5_12_0 implements IMythicHandler, Listener {
     }
 
     @Override
-    public boolean exsistsMythicMob(String id) {
+    public boolean existsMythicMob(String id) {
         return getMythicMobsInstance().getAPIHelper().getMythicMob(id) != null;
     }
 
@@ -73,7 +73,7 @@ public class MythicHandlerV5_12_0 implements IMythicHandler, Listener {
 
     @Override
     public EntityType getEntityType(String id) {
-        if(!exsistsMythicMob(id)) return null;
+        if(!existsMythicMob(id)) return null;
         return EntityType.valueOf(getMythicMobsInstance().getMobManager().getMythicMob(id).get().getEntityTypeString().toUpperCase());
     }
 

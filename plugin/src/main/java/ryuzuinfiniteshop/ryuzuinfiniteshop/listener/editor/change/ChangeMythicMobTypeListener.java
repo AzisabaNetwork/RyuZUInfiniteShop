@@ -38,7 +38,7 @@ public class ChangeMythicMobTypeListener implements Listener {
         SchedulerListener.setSchedulers(p, shop.getID(), event.getClickedInventory(), (message) -> {
             //成功時の処理
             //NPCを再構築する
-            if (!MythicInstanceProvider.getInstance().exsistsMythicMob(message)) {
+            if (!MythicInstanceProvider.getInstance().existsMythicMob(message)) {
                 p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.COMMAND_INVALID_MYTHIC_MOB_ID.getMessage());
                 SoundUtil.playFailSound(p);
                 return;

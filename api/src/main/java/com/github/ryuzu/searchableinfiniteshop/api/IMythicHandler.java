@@ -15,7 +15,7 @@ public interface IMythicHandler {
 
     void reload(Consumer<Runnable> consumer);
 
-    boolean exsistsMythicMob(String id);
+    boolean existsMythicMob(String id);
 
     Collection<String> getMythicMobs();
 
