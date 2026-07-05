@@ -23,6 +23,7 @@ class ShopTradeTest {
         server = MockBukkit.mock();
         var plugin = org.mockito.Mockito.mock(RyuZUInfiniteShop.class);
         org.mockito.Mockito.when(plugin.namespace()).thenReturn("searchableinfiniteshop");
+        org.mockito.Mockito.when(plugin.getName()).thenReturn("SearchableInfiniteShop");
         var field = RyuZUInfiniteShop.class.getDeclaredField("plugin");
         field.setAccessible(true);
         field.set(null, plugin);

@@ -103,61 +103,25 @@ public class Shop {
     }
 
     private void initialize(Location location, Runnable beforeInitializer, Runnable afterInitializer) {
-        boolean exsited = new File(RyuZUInfiniteShop.getPlugin().getDataFolder(), "shops/" + LocationUtil.toStringFromLocation(location) + ".yml").exists();
+        boolean existed = new File(RyuZUInfiniteShop.getPlugin().getDataFolder(), "shops/" + LocationUtil.toStringFromLocation(location) + ".yml").exists();
         this.location = location;
         ShopUtil.addShop(getID(), this);
         beforeInitializer.run();
         loadYamlProcess(getFile());
         afterInitializer.run();
-        if (!exsited) {
+        if (!existed) {
             createEditorNewPage();
             saveYaml();
         }
     }
 
     public void loadYamlProcess(File file) {
-        YamlConfiguration config = new YamlConfiguration();
-        try {
-            config.load(file);
-        } catch (IOException | InvalidConfigurationException e) {
-            e.printStackTrace();
-        }
-        getLoadYamlProcess().accept(config);
-    }
-
-    protected Consumer<YamlConfiguration> getLoadYamlProcess() {
-        return yaml -> {
-            this.mythicmob = yaml.getString("Npc.Options.MythicMob");
-            if (mythicmob != null) {
-                this.npcType = NpcType.MYTHICMOB;
-                if(MythicInstanceProvider.isLoaded() && !MythicInstanceProvider.getInstance().exsistsMythicMob(mythicmob))
-                    new RuntimeException(LanguageKey.ERROR_MYTHICMOBS_INVALID_ID.getMessage(mythicmob)).printStackTrace();
-            }
-            String citizenId = yaml.getString("Npc.Options.Citizen");
-            if (citizenId != null) {
-                this.uuid = UUID.fromString(citizenId);
-                this.citizen = uuid;
-                this.npcType = NpcType.CITIZEN;
-                if (CitizensHandler.isLoaded() && !CitizensHandler.isCitizensNPC(uuid))
-                    new RuntimeException(LanguageKey.ERROR_MYTHICMOBS_INVALID_ID.getMessage(uuid.toString())).printStackTrace();
-            }
-            this.displayName = yaml.getString("Npc.Options.DisplayName");
-            this.invisible = yaml.getBoolean("Npc.Options.Invisible", false);
-            this.location.setYaw((float) yaml.getDouble("Npc.Status.Yaw", 0));
-            this.type = ShopType.valueOf(yaml.getString("Shop.Options.ShopType", "TwotoOne"));
-            this.lock = yaml.getBoolean("Npc.Status.Lock", false);
-            this.searchable = yaml.getBoolean("Npc.Status.Searchable", true);
-            this.equipments = new ObjectItems(yaml.get("Npc.Options.Equipments", IntStream.range(0, 6).mapToObj(i -> new ItemStack(Material.AIR)).collect(Collectors.toList())));
-            this.trades = yaml.getList("Trades", new ArrayList<>()).stream().map(tradeconfig -> new ShopTrade((HashMap<String, Object>) tradeconfig)).collect(Collectors.toList());
-            updateTradeContents();
-
-            if (shopkeepersConfig == null) return;
-            ConfigurationSection objectSection = shopkeepersConfig.getConfigurationSection("object");
-            if (objectSection == null) objectSection = shopkeepersConfig;
-            setNpcMetaFromShopkeepersConfiguration(objectSection);
-            setDisplayName(shopkeepersConfig.getString("name", "").isEmpty() ? "" : ChatColor.GREEN + shopkeepersConfig.getString("name"));
+        ShopSerializer.load(this, file);
+        // Apply Shopkeepers config if present
+        if (shopkeepersConfig != null) {
+            ShopSerializer.applyShopkeepersConfig(this, shopkeepersConfig);
             shopkeepersConfig = null;
-        };
+        }
     }
 
     public void updateTradeContents() {
@@ -393,7 +357,7 @@ public class Shop {
     }
 
     public boolean isLimitPage(int page) {
-        return getPage(page).getTrades().size() == type.getLimitSize();
+        return ShopPageCalculator.isPageFull(getPage(page).getTrades().size(), type.getLimitSize());
     }
 
     public int getPageCount() {
@@ -401,15 +365,11 @@ public class Shop {
     }
 
     public int getTradePageCountFromTradesCount() {
-        int size = trades.size() / type.getLimitSize();
-        if (trades.size() % type.getLimitSize() != 0) size++;
-        return size;
+        return ShopPageCalculator.calculateTradePageCount(trades.size(), type.getLimitSize());
     }
 
     public int getEditorPageCountFromTradesCount() {
-        int size = getTradePageCountFromTradesCount() / 18;
-        //if (getTradePageCountFromTradesCount() % 18 != 0) size++;
-        return size + 1;
+        return ShopPageCalculator.calculateEditorPageCount(getTradePageCountFromTradesCount());
     }
 
     public ShopType getShopType() {
@@ -420,6 +380,7 @@ public class Shop {
         if (trades.isEmpty()) return true;
         return isLimitPage(pages.size());
     }
+    // ableCreateNewPage kept as-is because it uses isLimitPage which now delegates to ShopPageCalculator
 
     public void createTradeNewPage() {
         if (!ableCreateNewPage()) return;
@@ -437,8 +398,8 @@ public class Shop {
     }
 
     public boolean ableCreateEditorNewPage() {
-        if (editors.isEmpty()) return true;
-        return editors.size() < getEditorPageCountFromTradesCount();
+        return ShopPageCalculator.canCreateNewEditorPage(
+                editors.isEmpty(), editors.size(), getEditorPageCountFromTradesCount());
     }
 
     public void createEditorNewPage() {
@@ -447,36 +408,19 @@ public class Shop {
     }
 
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
-        return yaml -> {
-            yaml.set("Npc.Options.MythicMob", mythicmob);
-            yaml.set("Npc.Options.Citizen", npcType.equals(NpcType.CITIZEN) ? citizen.toString() : null);
-            yaml.set("Npc.Options.DisplayName", displayName);
-            yaml.set("Npc.Options.EntityType", entityType);
-            yaml.set("Npc.Options.Invisible", invisible);
-            yaml.set("Shop.Options.ShopType", type.toString());
-            yaml.set("Npc.Options.Equipments", equipments.getObjects());
-            yaml.set("Npc.Status.Lock", lock);
-            yaml.set("Npc.Status.Searchable", searchable);
-            yaml.set("Trades", getTrades().stream().map(ShopTrade::serialize).collect(Collectors.toList()));
-            yaml.set("Npc.Status.Yaw", location.getYaw());
-        };
+        return ShopSerializer.getSaveYamlProcess(this);
+    }
+
+    public Consumer<YamlConfiguration> getLoadYamlProcess() {
+        return ShopSerializer.getLoadYamlProcess(this);
     }
 
     public YamlConfiguration saveYaml() {
-        File file = getFile();
-        YamlConfiguration yaml = new YamlConfiguration();
-        getSaveYamlProcess().accept(yaml);
-        try {
-            yaml.save(file);
-        } catch (IOException e) {
-            if (!Config.readOnlyIgnoreIOException)
-                throw new RuntimeException(LanguageKey.ERROR_FILE_SAVING.getMessage(file.getName()), e);
-        }
-        return yaml;
+        return ShopSerializer.save(this);
     }
 
     public File getFile() {
-        return FileUtil.initializeFile("shops/" + getID() + ".yml");
+        return ShopSerializer.getFile(this);
     }
 
     public String getDisplayNameOrElseShop() {
@@ -512,15 +456,7 @@ public class Shop {
     }
 
     public void setNpcMeta(Entity npc) {
-        if (npc == null) return;
-        npc.setSilent(true);
-        npc.setInvulnerable(true);
-        npc.setGravity(false);
-//        npc.setPersistent(false);
-        npc = NBTUtil.setNMSTag(npc, "Shop", getID());
-        initializeLivingEntitiy(npc);
-        if (EntityType.END_CRYSTAL.name().equalsIgnoreCase(entityType))
-            ((EnderCrystal) npc).setShowingBottom(false);
+        ShopNPCManager.setNpcMeta(this, npc);
     }
 
     public void setNpcMetaFromShopkeepersConfiguration(ConfigurationSection section) {
@@ -561,27 +497,15 @@ public class Shop {
     }
 
     public void initializeLivingEntitiy(Entity npc) {
-        if (!(npc instanceof LivingEntity)) return;
-        LivingEntity livnpc = (LivingEntity) npc;
-        livnpc.setAI(false);
-        livnpc.setCollidable(false);
-        livnpc.setRemoveWhenFarAway(true);
-        livnpc.setPersistent(false);
-//        NBTBuilder.setPersistenceRequired(true);
+        ShopNPCManager.initializeLivingEntity(npc);
     }
 
     public void changeInvisible() {
-        if (!(getEntity() instanceof LivingEntity)) return;
-        NBTBuilder.setInvisible(!invisible);
-        invisible = !invisible;
+        ShopNPCManager.changeInvisible(this);
     }
 
-    public void changeNPCDirecation() {
-        Entity npc = getEntity();
-        if (!(npc instanceof LivingEntity)) return;
-        LivingEntity livnpc = (LivingEntity) npc;
-        location.setYaw((location.getYaw() + 45));
-        livnpc.teleport(LocationUtil.toBlockLocationFromLocation(location));
+    public void changeNPCDirection() {
+        ShopNPCManager.changeNPCDirection(this);
     }
 
     public ItemStack getEquipmentItem(int slot) {
@@ -598,40 +522,7 @@ public class Shop {
     }
 
     public void updateEquipments() {
-        if (!npcType.equals(NpcType.CITIZEN)) {
-            Entity npc = getEntity();
-            if (npc instanceof LivingEntity) {
-                LivingEntity livnpc = ((LivingEntity) npc);
-                for (EquipmentSlot slot : EquipmentUtil.getEquipmentsSlot().values()) {
-                    switch (slot) {
-                        case HAND:
-                            livnpc.getEquipment().setItemInMainHand(getEquipmentItem(slot.ordinal()));
-                            break;
-                        case OFF_HAND:
-                            livnpc.getEquipment().setItemInOffHand(getEquipmentItem(slot.ordinal()));
-                            break;
-                        case FEET:
-                            livnpc.getEquipment().setBoots(getEquipmentItem(slot.ordinal()));
-                            break;
-                        case LEGS:
-                            livnpc.getEquipment().setLeggings(getEquipmentItem(slot.ordinal()));
-                            break;
-                        case CHEST:
-                            livnpc.getEquipment().setChestplate(getEquipmentItem(slot.ordinal()));
-                            break;
-                        case HEAD:
-                            livnpc.getEquipment().setHelmet(getEquipmentItem(slot.ordinal()));
-                            break;
-                    }
-                }
-//                for (EquipmentSlot slot : EquipmentUtil.getEquipmentsSlot().values())
-//                    livnpc.getEquipment().setItem(slot, getEquipmentItem(slot.ordinal()));
-            }
-        } else if (CitizensHandler.isLoaded() && CitizensHandler.isCitizensNPC(uuid)) {
-            for (EquipmentSlot slot : EquipmentUtil.getEquipmentsSlot().values())
-                CitizensHandler.setEquipment(uuid, slot, equipments.toItemStacks()[slot.ordinal()]);
-            CitizensHandler.respawn(this);
-        }
+        ShopNPCManager.updateEquipments(this);
     }
 
     public boolean isEditting(Player p) {
@@ -714,66 +605,12 @@ public class Shop {
         this.citizen = null;
     }
 
-    /**
-     *
-     */
     public void removeNPC() {
-        Entity npc = getEntity();
-        if (npc != null) {
-            NBTUtil.removeNMSTag(npc);
-            npc.remove();
-        }
-        location.getWorld().getNearbyEntities(LocationUtil.getMiddleLocation(location), 0.5, 0.5, 0.5).stream()
-                .filter(entity -> NBTUtil.getNMSStringTag(entity, "Shop") != null)
-                .forEach(Entity::remove);
-        if (npcType.equals(NpcType.CITIZEN)) CitizensHandler.despawnNPC(this);
-        uuid = null;
+        ShopNPCManager.removeNPC(this);
     }
 
     public void respawnNPC() {
-        if (npcType != NpcType.MYTHICMOB && entityType == null && JavaUtil.isEmptyString(displayName)) return;
-        if (FileUtil.isSaveBlock()) return;
-        Entity npc = getEntity();
-        if (npc != null && npc.isValid()) return;
-        if (!location.getWorld().isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) return;
-        removeNPC();
-
-        switch (npcType) {
-            case MYTHICMOB:
-                if (!MythicInstanceProvider.isLoaded() || !MythicInstanceProvider.getInstance().exsistsMythicMob(mythicmob)) return;
-                npc = MythicInstanceProvider.getInstance().spawnMythicMob(LocationUtil.getMiddleLocation(location), mythicmob);
-                if(npc == null) return;
-                this.uuid = npc.getUniqueId();
-                npc = getEntity();
-                setNpcMeta(npc);
-                return;
-            case CITIZEN:
-                if (!CitizensHandler.isLoaded()) return;
-                this.uuid = CitizensHandler.createNPC(this);
-                this.citizen = uuid;
-                CitizensHandler.spawnNPC(this);
-                return;
-            case BLOCK:
-                if (hologram != null && hologram.isValid()) return;
-                hologram = EntityUtil.spawnHologram(location.clone().add(0.5, 1, 0.5), displayName);
-                return;
-            default:
-                spawnNPC(EntityType.valueOf(entityType));
-                npc = getEntity();
-                npc.setCustomName(displayName);
-                npc.getPassengers().forEach(Entity::remove);
-                Optional.ofNullable(npc.getVehicle()).ifPresent(Entity::remove);
-                if (npc instanceof LivingEntity)
-                    updateEquipments();
-
-                this.NBTBuilder = new EntityNBTBuilder(getEntity());
-                Block block = location.clone().subtract(0, -1, 0).getBlock();
-//            if (npc != null && block.getBlockData() instanceof Slab && ((Slab) block.getBlockData()).getType().equals(Slab.Type.BOTTOM))
-//                npc.teleport(location.clone().add(0, -0.5, 0));
-                if (getEntity() instanceof LivingEntity)
-                    NBTBuilder.setInvisible(invisible);
-                break;
-        }
+        ShopNPCManager.respawnNPC(this);
     }
 
     protected boolean isEditableNpc() {

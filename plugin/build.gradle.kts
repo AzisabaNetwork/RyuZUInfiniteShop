@@ -31,6 +31,10 @@ repositories {
     maven {
         url = uri("https://maven.enginehub.org/repo/")
     }
+    maven {
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
 }
 
 dependencies {
@@ -46,10 +50,13 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.46")
     compileOnly("com.mojang:authlib:1.5.21")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
+    testImplementation("com.github.MilkBowl:VaultAPI:1.7")
     compileOnly("net.citizensnpcs:citizens-main:2.0.30-SNAPSHOT") {
         exclude("*", "*")
     }
 
+    // Paper API 1.21.11-R0.1-SNAPSHOT removed from repo; use latest alpha build
+    // Paper API includes Spigot API; Spigot's NamespacedKey conflicts with Paper's
     testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0") {
         exclude(group = "org.junit.jupiter")

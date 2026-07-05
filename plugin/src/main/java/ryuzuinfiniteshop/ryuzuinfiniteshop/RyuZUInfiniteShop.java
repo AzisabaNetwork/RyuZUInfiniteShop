@@ -4,9 +4,6 @@ import com.github.ryuzu.ryuzucommandsgenerator.RyuZUCommandsGenerator;
 import lombok.Getter;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.command.CommandChain;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
@@ -25,13 +22,6 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.migration.MigrationResult;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.migration.ShopMigrationService;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.*;
 
-import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.util.Enumeration;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.logging.Logger;
 
 public final class RyuZUInfiniteShop extends JavaPlugin {
@@ -80,10 +70,10 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
         getPlugin().getServer().getPluginManager().registerEvents(new ChangeShopTypeListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new ChangeMythicMobTypeListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new ChangeCitizenNpcTypeListener(), getPlugin());
-        getPlugin().getServer().getPluginManager().registerEvents(new ChangeNpcDirecationListener(), getPlugin());
+        getPlugin().getServer().getPluginManager().registerEvents(new ChangeNpcDirectionListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new ChangeLockListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new ChangeSearchableListener(), getPlugin());
-        getPlugin().getServer().getPluginManager().registerEvents(new ConvartListener(), getPlugin());
+        getPlugin().getServer().getPluginManager().registerEvents(new ConvertListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new RemoveShopListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new ReloadShopListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new SearchTradeListener(), getPlugin());
@@ -91,45 +81,5 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
         getPlugin().getServer().getPluginManager().registerEvents(new SchedulerListener(), getPlugin());
     }
 
-    public static void registerAllListeners() {
-        Plugin plugin = RyuZUInfiniteShop.getPlugin();
-        PluginManager pluginManager = plugin.getServer().getPluginManager();
-        String listenersPackageName = plugin.getClass().getPackage().getName() + ".listener";
 
-        try {
-            URL pluginUrl = plugin.getClass().getProtectionDomain().getCodeSource().getLocation();
-            File pluginFile = new File(pluginUrl.toURI());
-            if (pluginFile.isFile()) {
-                JarFile jarFile = new JarFile(pluginFile);
-                Enumeration<JarEntry> entries = jarFile.entries();
-                URL[] urls = {pluginUrl};
-                URLClassLoader classLoader = new URLClassLoader(urls);
-
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    String entryName = entry.getName();
-                    if (entryName.startsWith(listenersPackageName.replace('.', '/')) && entryName.endsWith(".class")) {
-                        String className = entryName.replace('/', '.').substring(0, entryName.length() - ".class".length());
-                        Class<?> clazz = classLoader.loadClass(className);
-                        if (Listener.class.isAssignableFrom(clazz)) {
-                            Listener listener = (Listener) clazz.getDeclaredConstructor().newInstance();
-                            pluginManager.registerEvents(listener, plugin);
-                        }
-                    }
-                }
-                jarFile.close();
-                classLoader.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static String extractClassName(Path basePath, Path classFile) {
-        String packageName = RyuZUInfiniteShop.getPlugin().getClass().getPackage().getName();
-        String relativePath = basePath.relativize(classFile).toString();
-        String className = relativePath.replace(File.separator, ".");
-        className = className.substring(0, className.length() - ".class".length());
-        return packageName + ".listeners." + className;
-    }
 }

@@ -152,7 +152,7 @@ public class CommandChain {
                             }
                             if (data.getArgs()[1].equalsIgnoreCase("CITIZEN"))
                                 new Shop(loc, ((Player) data.getSender()).getUniqueId(), false);
-                            else if (MythicInstanceProvider.getInstance().exsistsMythicMob(data.getArgs()[1]))
+                            else if (MythicInstanceProvider.getInstance().existsMythicMob(data.getArgs()[1]))
                                 new Shop(loc, data.getArgs()[1]);
                             else
                                 ShopUtil.createNewShop(loc, data.getArgs()[1], null);
@@ -176,7 +176,7 @@ public class CommandChain {
                         EntityType.valueOf(data.getArgs()[1].toUpperCase());
                         return true;
                     } catch (IllegalArgumentException e) {
-                        if (MythicInstanceProvider.isLoaded() && !MythicInstanceProvider.getInstance().exsistsMythicMob(data.getArgs()[1])) {
+                        if (MythicInstanceProvider.isLoaded() && !MythicInstanceProvider.getInstance().existsMythicMob(data.getArgs()[1])) {
                             data.sendMessage(ChatColor.RED + LanguageKey.MESSAGE_ERROR_INVALID_ENTITY.getMessage());
                             return false;
                         }
