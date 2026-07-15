@@ -58,7 +58,7 @@ public class Config {
         if (!yaml.contains("SaveByMMID")) yaml.set("SaveByMMID", saveByMMID);
         if (!yaml.contains("OverwriteConverting")) yaml.set("OverwriteConverting", overwriteConverting);
         if (!yaml.contains("DefaultSearchableInConverting"))
-            yaml.set("DefaultSearchableInConverting", overwriteConverting);
+            yaml.set("DefaultSearchableInConverting", defaultSearchableInConverting);
         if (!yaml.contains("FollowPlayer")) yaml.set("FollowPlayer", followPlayer);
         if (!yaml.contains("Language")) yaml.set("Language", language);
         if (!yaml.contains("ReadOnlyIgnoreIOException"))
