@@ -274,7 +274,7 @@ public class ShopTrade {
             inv.removeItem(getTakeItems());
             if (getOption().getMoney() != 0 && !getOption().isGive())
                 VaultHandler.takeMoney(p.getUniqueId(), getOption().getMoney());
-            if (getOption().getRate() == 100 || getOption().getRate() > random.nextInt(100) + 1) {
+            if (getOption().getRate() == 100 || getOption().getRate() >= random.nextInt(100) + 1) {
                 if (getOption().getMoney() != 0 && getOption().isGive())
                     VaultHandler.giveMoney(p.getUniqueId(), getOption().getMoney());
                 inv.addItem(getGiveItems());
