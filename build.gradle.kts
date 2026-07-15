@@ -32,6 +32,13 @@ tasks.withType<Javadoc> {
 }
 
 subprojects {
+    plugins.withType<JavaPlugin> {
+        extensions.configure<JavaPluginExtension> {
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+        }
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
     }
@@ -45,6 +52,7 @@ dependencies {
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_21
+java.targetCompatibility = JavaVersion.VERSION_21
 description = "Searchable Infinite Shop Plugin"
 
 publishing {
