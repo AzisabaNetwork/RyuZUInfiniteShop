@@ -32,7 +32,10 @@ public class LanguageConfig {
             throw new RuntimeException(e);
         }
 
-        Arrays.stream(LanguageKey.values()).forEach(key -> texts.put(key, yaml.getString(key.getConfigKey(), key.getLanguage(Config.language))));
+        Arrays.stream(LanguageKey.values()).forEach(key -> {
+            String configKey = key.getConfigKey();
+            texts.put(key, yaml.isString(configKey) ? yaml.getString(configKey) : key.getLanguage(Config.language));
+        });
     }
 
     public static void save() {
@@ -47,7 +50,7 @@ public class LanguageConfig {
             }
 
             Arrays.stream(LanguageKey.values()).forEach(key -> {
-                if (!yaml.contains(key.getConfigKey())) yaml.set(key.getConfigKey(), key.getLanguage(language));
+                if (!yaml.isString(key.getConfigKey())) yaml.set(key.getConfigKey(), key.getLanguage(language));
             });
 
             try {

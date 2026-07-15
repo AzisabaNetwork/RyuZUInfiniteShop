@@ -62,6 +62,9 @@ public enum LanguageKey {
     ITEM_EDITOR_BUTTON_DELETE("削除する", "Delete"),
     ITEM_EDITOR_NEW_PAGE("新規ページ", "New page"),
     INVENTORY_PAGE("ページ {0}", "Page {0}"),
+    INVENTORY_PAGE_WITH_TOTAL("ページ {0}/{1}", "Page {0}/{1}"),
+    ITEM_PAGE_PREVIOUS("前のページ", "Previous page"),
+    ITEM_PAGE_NEXT("次のページ", "Next page"),
     INVENTORY_EDITOR_OPTIONS("取引オプションの編集", "Edit trade options"),
     ITEM_OPTIONS_LIMIT_SHIFT("シフトクリック: チャットで値を入力", "Shift click: Enter value in chat"),
     ITEM_OPTIONS_RATE_VALUE("取引成功確率: {0}% {1}", "Trade success rate: {0}% {1}"),
@@ -214,6 +217,7 @@ public enum LanguageKey {
     }
 
     public String getConfigKey() {
+        if (this == INVENTORY_PAGE_WITH_TOTAL) return "inventory.page-with-total";
         return name().toLowerCase().replace("_", ".");
     }
 }

@@ -8,6 +8,7 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.ShopListGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ModeHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopListHolder;
@@ -29,7 +30,10 @@ ShopListListener implements Listener {
         ModeHolder holder = ShopUtil.getModeHolder(event);
         if (holder == null) return;
         if (!(holder.getGui() instanceof ShopListGui)) return;
-        if (event.getClickedInventory() != null) return;
+        ItemStack item = event.getCurrentItem();
+        boolean previousButton = PageNavigationUtil.isPrevious(item);
+        boolean nextButton = PageNavigationUtil.isNext(item);
+        if (event.getClickedInventory() != null && !(previousButton || nextButton)) return;
 
         //イベントキャンセル
         event.setCancelled(true);
@@ -43,13 +47,13 @@ ShopListListener implements Listener {
 
         //ページ切り替え
         boolean fail = false;
-        if (type.isLeftClick()) {
+        if (previousButton || (event.getClickedInventory() == null && type.isLeftClick())) {
             if (page - 1 == 0)
                 fail = true;
             else
                 p.openInventory(new ShopListGui(page - 1, shopListHolder.getShops()).getInventory(mode));
         }
-        if (type.isRightClick()) {
+        if (nextButton || (event.getClickedInventory() == null && type.isRightClick())) {
             if (page == shopListHolder.getMaxPage()) {
                 fail = true;
             } else
@@ -69,6 +73,7 @@ ShopListListener implements Listener {
         if (holder == null) return;
         if (!(holder.getGui() instanceof ShopListGui)) return;
         if (event.getClickedInventory() == null) return;
+        if (PageNavigationUtil.isPrevious(event.getCurrentItem()) || PageNavigationUtil.isNext(event.getCurrentItem())) return;
 
         //イベントキャンセル
         event.setCancelled(true);

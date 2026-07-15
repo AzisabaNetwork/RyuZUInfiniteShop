@@ -25,6 +25,7 @@ import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.UnderstandSystemConfig;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ModeHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopMode;
@@ -133,12 +134,15 @@ public class OpenShopListener implements Listener {
         //インベントリがショップなのかチェック
         ShopHolder holder = ShopUtil.getShopHolder(event);
         if (holder == null) return;
-        if (event.getClickedInventory() != null) return;
         if (!(holder.getGui() instanceof ShopTradeGui)) return;
 
         //必要なデータを取得
         Player p = (Player) event.getWhoClicked();
         ClickType type = event.getClick();
+        ItemStack clickedItem = event.getCurrentItem();
+        boolean previousButton = PageNavigationUtil.isPrevious(clickedItem);
+        boolean nextButton = PageNavigationUtil.isNext(clickedItem);
+        if (event.getClickedInventory() != null && !(previousButton || nextButton)) return;
         Inventory inv = event.getView().getTopInventory();
         ShopMode mode = holder.getMode();
         Shop shop = holder.getShop();
@@ -146,13 +150,13 @@ public class OpenShopListener implements Listener {
 
         //ページ切り替え
         boolean fail = false;
-        if (type.isLeftClick()) {
+        if (previousButton || (event.getClickedInventory() == null && type.isLeftClick())) {
             if (shop.getPage(page - 1) == null)
                 fail = true;
             else
                 p.openInventory(shop.getPage(page - 1).getInventory(mode, p, holder.getBefore()));
         }
-        if (type.isRightClick()) {
+        if (nextButton || (event.getClickedInventory() == null && type.isRightClick())) {
             if (shop.getPage(page + 1) == null) {
                 fail = true;
                 if (holder.getMode().equals(ShopMode.EDIT)) {
