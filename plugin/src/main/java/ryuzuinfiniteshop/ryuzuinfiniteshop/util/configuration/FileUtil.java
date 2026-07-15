@@ -50,27 +50,23 @@ public class FileUtil {
         saveBlock = true;
         Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_FILES.getMessage()));
         HashMap<Player, ShopHolder> viewer = ShopUtil.getAllShopInventoryViewer();
-        Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
-            Config.load();
-            LanguageConfig.load();
-            TradeUtil.saveTradeOptions();
-            ShopUtil.saveAllShops();
-            UnderstandSystemConfig.save();
-            Config.save();
-            LanguageConfig.save();
-            DisplayPanelConfig.save();
-            DisplayPanelConfig.load();
-            boolean converted = ShopUtil.loadAllShops();
-            TradeUtil.loadTradeOptions();
-            Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> {
-                saveBlock = false;
-                if (converted) saveAll();
-                Config.runAutoSave();
-                Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_COMPLETE.getMessage()));
-                ShopUtil.getShops().values().forEach(Shop::respawnNPC);
-                ShopUtil.openAllShopInventory(viewer);
-            });
-        });
+        Config.load();
+        LanguageConfig.load();
+        TradeUtil.saveTradeOptions();
+        ShopUtil.saveAllShops();
+        UnderstandSystemConfig.save();
+        Config.save();
+        LanguageConfig.save();
+        DisplayPanelConfig.save();
+        DisplayPanelConfig.load();
+        boolean converted = ShopUtil.loadAllShops();
+        TradeUtil.loadTradeOptions();
+        saveBlock = false;
+        if (converted) saveAll();
+        Config.runAutoSave();
+        Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_COMPLETE.getMessage()));
+        ShopUtil.getShops().values().forEach(Shop::respawnNPC);
+        ShopUtil.openAllShopInventory(viewer);
         return true;
     }
 
@@ -79,21 +75,17 @@ public class FileUtil {
 
         ShopUtil.removeAllNPC();
         saveBlock = true;
-        Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
-            Config.load();
-            LanguageConfig.load();
-            DisplayPanelConfig.load();
-            UnderstandSystemConfig.load();
-            boolean converted = ShopUtil.loadAllShops();
-            TradeUtil.loadTradeOptions();
-            Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> {
-                saveBlock = false;
-                if (converted) saveAll(false);
-                Config.runAutoSave();
-                Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_LOADING_COMPLETE.getMessage()));
-                ShopUtil.getShops().values().forEach(Shop::respawnNPC);
-            });
-        });
+        Config.load();
+        LanguageConfig.load();
+        DisplayPanelConfig.load();
+        UnderstandSystemConfig.load();
+        boolean converted = ShopUtil.loadAllShops();
+        TradeUtil.loadTradeOptions();
+        saveBlock = false;
+        if (converted) saveAll(false);
+        Config.runAutoSave();
+        Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_LOADING_COMPLETE.getMessage()));
+        ShopUtil.getShops().values().forEach(Shop::respawnNPC);
         return true;
     }
 
@@ -123,7 +115,6 @@ public class FileUtil {
     public static void saveAllSync() {
         ShopUtil.removeAllNPC();
         ShopUtil.getAllShopInventoryViewer();
-        Config.load();
         TradeUtil.saveTradeOptions();
         ShopUtil.saveAllShops();
         UnderstandSystemConfig.save();
