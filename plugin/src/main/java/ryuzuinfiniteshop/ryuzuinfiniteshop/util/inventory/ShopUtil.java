@@ -87,7 +87,7 @@ public class ShopUtil {
                 String citizen = config.getString("Npc.Options.Citizen");
                 if (mythicmob != null)
                     new Shop(location, mythicmob);
-                if (citizen != null)
+                else if (citizen != null)
                     new Shop(location, UUID.fromString(citizen), false);
                 else
                     createNewShop(location, type, null);
@@ -136,7 +136,7 @@ public class ShopUtil {
         String citizen = config.getString("Npc.Options.Citizen");
         if (mythicmob != null)
             return new Shop(location, mythicmob);
-        if (citizen != null)
+        else if (citizen != null)
             return new Shop(location, UUID.fromString(citizen), false);
         else
             return createNewShop(location, type, null);
