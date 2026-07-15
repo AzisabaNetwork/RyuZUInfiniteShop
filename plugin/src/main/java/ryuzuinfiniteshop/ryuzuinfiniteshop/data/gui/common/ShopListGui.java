@@ -27,11 +27,12 @@ public class ShopListGui extends PageableGui {
 
     @Override
     public Inventory getInventory(ShopMode mode) {
-        Inventory inv = Bukkit.createInventory(new ShopListHolder(mode, this, shops), 9 * 6, ChatColor.DARK_BLUE + LanguageKey.INVENTORY_SHOP_LIST.getMessage(getPage()) + " " + LanguageKey.INVENTORY_PAGE.getMessage(getPage()));
+        int maxPage = Math.max(1, (int) Math.ceil((double) shops.size() / PageNavigationUtil.LIST_PAGE_SIZE));
+        Inventory inv = Bukkit.createInventory(new ShopListHolder(mode, this, shops), 9 * 6, PageNavigationUtil.title(LanguageKey.INVENTORY_SHOP_LIST.getMessage(), getPage(), maxPage));
 
         List<String> keys = new ArrayList<>(shops.keySet());
-        for (int i = 0; i < Math.min(shops.size() - (getPage() - 1) * 54, 54); i++) {
-            Shop shop = shops.get(keys.get(i + (getPage() - 1) * 54));
+        for (int i = 0; i < Math.min(shops.size() - (getPage() - 1) * PageNavigationUtil.LIST_PAGE_SIZE, PageNavigationUtil.LIST_PAGE_SIZE); i++) {
+            Shop shop = shops.get(keys.get(i + (getPage() - 1) * PageNavigationUtil.LIST_PAGE_SIZE));
             ItemStack item;
             if (mode.equals(ShopMode.EDIT))
                 item = getDisplayItem(
@@ -53,6 +54,7 @@ public class ShopListGui extends PageableGui {
             item = NBTUtil.setNMSTag(item, "Shop", shop.getID());
             inv.setItem(i, item);
         }
+        PageNavigationUtil.setNavigationItems(inv, getPage(), maxPage);
 
         return inv;
     }

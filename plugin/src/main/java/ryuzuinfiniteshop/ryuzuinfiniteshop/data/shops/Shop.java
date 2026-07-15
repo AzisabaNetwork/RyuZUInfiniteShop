@@ -14,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.editor.ShopEditorGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.trade.ShopGui2to1;
@@ -152,7 +153,7 @@ public class Shop {
         HashSet<ShopTrade> emptyTrades = new HashSet<>();
         List<ShopTrade> onTrades = new ArrayList<>(getTrades());
         gui.getTrades().forEach(onTrades::remove);
-        for (int i = 0; i < 9 * 6; i += getShopType().getAddSlot()) {
+        for (int i = 0; i < PageNavigationUtil.PREVIOUS_SLOT; i += getShopType().getAddSlot()) {
             if (getShopType().equals(ShopType.TwotoOne) && i % 9 == 4) i++;
 
             // 取引のオプションのスロットを取得する

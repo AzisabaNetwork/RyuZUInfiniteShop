@@ -1,6 +1,7 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder;
 
 import lombok.Getter;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.ShopListGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 
@@ -22,7 +23,7 @@ public class ShopListHolder extends PageableHolder {
 
     @Override
     public int getMaxPage() {
-        return (int) Math.ceil((double) shops.size() / 54);
+        return Math.max(1, (int) Math.ceil((double) shops.size() / PageNavigationUtil.LIST_PAGE_SIZE));
     }
 
     @Override

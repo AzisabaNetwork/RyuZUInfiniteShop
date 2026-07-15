@@ -22,8 +22,8 @@ import static org.bukkit.entity.Villager.Type.*;
 
 @Getter
 public class VillagerableShop extends AgeableShop {
-    protected Villager.Profession profession;
-    protected Villager.Type biome;
+    protected Villager.Profession profession = NONE;
+    protected Villager.Type biome = PLAINS;
     protected int level = 1;
     private static final Random random = new Random();
 
@@ -32,26 +32,26 @@ public class VillagerableShop extends AgeableShop {
     }
 
     public void setProfession(Villager.Profession profession) {
-        this.profession = profession;
+        this.profession = JavaUtil.getOrDefault(profession, NONE);
         Entity npc = getEntity();
         if (npc == null) return;
         if (npc instanceof Villager) {
-            ((Villager) npc).setProfession(profession);
+            ((Villager) npc).setProfession(this.profession);
             ((Villager) npc).setRecipes(new ArrayList<>());
         }
         else
-            ((ZombieVillager) npc).setVillagerProfession(profession);
+            ((ZombieVillager) npc).setVillagerProfession(this.profession);
 //        NBTBuilder.setVillagerData(profession, biome, level);
     }
 
     public void setBiome(Villager.Type villagertype) {
-        this.biome = villagertype;
+        this.biome = JavaUtil.getOrDefault(villagertype, PLAINS);
         Entity npc = getEntity();
         if (npc == null) return;
         if (npc instanceof Villager)
-            ((Villager) npc).setVillagerType(villagertype);
+            ((Villager) npc).setVillagerType(this.biome);
         else
-            ((ZombieVillager) npc).setVillagerType(villagertype);
+            ((ZombieVillager) npc).setVillagerType(this.biome);
 //        NBTBuilder.setVillagerData(profession, biome, level);
     }
 

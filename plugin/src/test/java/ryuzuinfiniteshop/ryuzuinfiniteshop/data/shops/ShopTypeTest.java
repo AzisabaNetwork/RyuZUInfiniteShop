@@ -80,9 +80,9 @@ class ShopTypeTest {
 
     static Stream<Arguments> limitSizeProvider() {
         return Stream.of(
-                Arguments.of(ShopType.TwotoOne, 12),
-                Arguments.of(ShopType.FourtoFour, 6),
-                Arguments.of(ShopType.SixtoTwo, 6)
+                Arguments.of(ShopType.TwotoOne, 10),
+                Arguments.of(ShopType.FourtoFour, 5),
+                Arguments.of(ShopType.SixtoTwo, 5)
         );
     }
 

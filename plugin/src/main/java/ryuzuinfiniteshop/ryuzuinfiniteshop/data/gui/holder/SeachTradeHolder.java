@@ -2,6 +2,7 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder;
 
 import lombok.Getter;
 import org.bukkit.entity.Player;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.SearchTradeGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
@@ -26,7 +27,7 @@ public class SeachTradeHolder extends PageableHolder {
     }
 
     public int getMaxPage() {
-        return (int) Math.ceil((double) trades.size() / 6);
+        return Math.max(1, (int) Math.ceil((double) trades.size() / PageNavigationUtil.SEARCH_PAGE_SIZE));
     }
 
     @Override

@@ -32,7 +32,7 @@ public enum ShopType {
     }
 
     public int getLimitSize() {
-        return this.equals(ShopType.TwotoOne) ? 12 : 6;
+        return this.equals(ShopType.TwotoOne) ? 10 : 5;
     }
 
     public int getAddSlot() {

@@ -42,6 +42,16 @@ class ShopCreationCharacterizationTest extends ShopTestBase {
     }
 
     @Test
+    void createVillagerShopHasDefaultVillagerData() {
+        Shop shop = ShopUtil.createNewShop(new org.bukkit.Location(world, 0, 65, 0), "VILLAGER", null);
+
+        assertInstanceOf(VillagerableShop.class, shop);
+        VillagerableShop villagerShop = (VillagerableShop) shop;
+        assertEquals(org.bukkit.entity.Villager.Profession.NONE, villagerShop.getProfession());
+        assertEquals(org.bukkit.entity.Villager.Type.PLAINS, villagerShop.getBiome());
+    }
+
+    @Test
     void shopIsRegisteredInShopUtil() {
         Shop shop = createSimpleShop(5, 10, 15);
 

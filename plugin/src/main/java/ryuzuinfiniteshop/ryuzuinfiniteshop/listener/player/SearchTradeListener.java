@@ -10,6 +10,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.SearchTradeGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.SelectSearchItemGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.ShopListGui;
@@ -90,7 +91,10 @@ public class SearchTradeListener implements Listener {
         ModeHolder holder = ShopUtil.getModeHolder(event);
         if (holder == null) return;
         if (!(holder.getGui() instanceof SearchTradeGui)) return;
-        if (event.getClickedInventory() != null) return;
+        ItemStack clickedItem = event.getCurrentItem();
+        boolean previousButton = PageNavigationUtil.isPrevious(clickedItem);
+        boolean nextButton = PageNavigationUtil.isNext(clickedItem);
+        if (event.getClickedInventory() != null && !(previousButton || nextButton)) return;
 
         //必要なデータを取得
         SeachTradeHolder seachTradeHolder = (SeachTradeHolder) holder;
@@ -101,13 +105,13 @@ public class SearchTradeListener implements Listener {
 
         //ページ切り替え
         boolean fail = false;
-        if (type.isLeftClick()) {
+        if (previousButton || (event.getClickedInventory() == null && type.isLeftClick())) {
             if (page - 1 == 0)
                 fail = true;
             else
                 p.openInventory(new SearchTradeGui(page - 1, p, seachTradeHolder.getTrades()).getInventory(mode, holder.getBefore()));
         }
-        if (type.isRightClick()) {
+        if (nextButton || (event.getClickedInventory() == null && type.isRightClick())) {
             if (page == seachTradeHolder.getMaxPage()) {
                 fail = true;
             } else
@@ -129,6 +133,7 @@ public class SearchTradeListener implements Listener {
         if (holder == null) return;
         if (!(holder.getGui() instanceof SearchTradeGui)) return;
         if (event.getClickedInventory() == null) return;
+        if (PageNavigationUtil.isPrevious(event.getCurrentItem()) || PageNavigationUtil.isNext(event.getCurrentItem())) return;
 
         event.setCancelled(true);
 

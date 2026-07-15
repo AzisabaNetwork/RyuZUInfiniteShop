@@ -1,12 +1,11 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.trade;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.DisplayPanelConfig;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.editor.ShopGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ModeHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
@@ -44,7 +43,7 @@ public abstract class ShopTradeGui extends ShopGui {
     }
 
     public Inventory getInventory(Function<Integer, Integer> function, ShopMode mode) {
-        Inventory inv = Bukkit.createInventory(new ShopHolder(mode, getShop(), this), 9 * 6, ChatColor.DARK_BLUE + getShop().getDisplayNameOrElseShop() + " " + LanguageKey.INVENTORY_PAGE.getMessage(getPage()));
+        Inventory inv = Bukkit.createInventory(new ShopHolder(mode, getShop(), this), 9 * 6, PageNavigationUtil.title(getShop().getDisplayNameOrElseShop(), getPage(), getShop().getPageCount()));
 
         for (int i = 0; i < getTrades().size(); i++) {
             ShopTrade trade = getTrades().get(i);
@@ -55,9 +54,10 @@ public abstract class ShopTradeGui extends ShopGui {
             }
         }
 
-        for (int i = function.apply(getTrades().size()); i < 9 * 6; i++) {
+        for (int i = function.apply(getTrades().size()); i < PageNavigationUtil.PREVIOUS_SLOT; i++) {
             if (mode.equals(ShopMode.TRADE)) inv.setItem(i, ShopTrade.getFilter());
         }
+        PageNavigationUtil.setNavigationItems(inv, getPage(), getShop().getPageCount());
 
         return inv;
     }

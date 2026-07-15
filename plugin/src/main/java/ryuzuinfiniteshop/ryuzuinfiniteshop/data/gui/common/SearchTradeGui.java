@@ -1,7 +1,6 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -31,21 +30,23 @@ public class SearchTradeGui extends TradesGui {
 
     @Override
     public Inventory getInventory(ShopMode mode) {
-        Inventory inv = Bukkit.createInventory(new SeachTradeHolder(mode, this, player, searchedTrade), 9 * 6, ChatColor.DARK_BLUE + LanguageKey.INVENTORY_SEARCH_TRADE.getMessage(getPage()) + " " + LanguageKey.INVENTORY_PAGE.getMessage(String.valueOf(getPage())));
+        int maxPage = Math.max(1, (int) Math.ceil((double) searchedTrade.size() / PageNavigationUtil.SEARCH_PAGE_SIZE));
+        Inventory inv = Bukkit.createInventory(new SeachTradeHolder(mode, this, player, searchedTrade), 9 * 6, PageNavigationUtil.title(LanguageKey.INVENTORY_SEARCH_TRADE.getMessage(), getPage(), maxPage));
 
-        for (int i = (getPage() - 1) * 6; i < getPage() * 6; i++) {
+        for (int i = (getPage() - 1) * PageNavigationUtil.SEARCH_PAGE_SIZE; i < getPage() * PageNavigationUtil.SEARCH_PAGE_SIZE; i++) {
             if (i >= trades.size()) {
                 for (int j = 0; j < 9; j++) {
-                    inv.setItem((i % 6) * 9 + j, ShopTrade.getFilter());
+                    inv.setItem((i % PageNavigationUtil.SEARCH_PAGE_SIZE) * 9 + j, ShopTrade.getFilter());
                 }
             } else {
                 Shop shop = shops.get(i);
                 ItemStack[] items = trades.get(i).getTradeItems(shop.getShopType(), shop.getID(), player);
                 for (int j = 0; j < 9; j++) {
-                    inv.setItem((i % 6) * 9 + j, items[j]);
+                    inv.setItem((i % PageNavigationUtil.SEARCH_PAGE_SIZE) * 9 + j, items[j]);
                 }
             }
         }
+        PageNavigationUtil.setNavigationItems(inv, getPage(), maxPage);
 
         return inv;
     }
