@@ -179,8 +179,7 @@ public class Shop {
     public boolean checkTrades(Inventory inv, Player player) {
         ShopHolder holder = ShopUtil.getShopHolder(inv);
         if (holder == null) return false;
-        ShopTradeGui gui = getPage(holder.getGui().getPage());
-        if (gui == null) return false;
+        ShopTradeGui gui = (ShopTradeGui) holder.getGui();
 
         //取引を上書きし、取引として成立しないものと重複しているものは削除する
         boolean duplication = false;

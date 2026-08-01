@@ -26,8 +26,12 @@ public final class PageNavigationUtil {
     }
 
     public static void setNavigationItems(Inventory inventory, int page, int maxPage) {
+        setNavigationItems(inventory, page, maxPage, false);
+    }
+
+    public static void setNavigationItems(Inventory inventory, int page, int maxPage, boolean allowNewNextPage) {
         if (page > 1) inventory.setItem(PREVIOUS_SLOT, createNavigationItem(PREVIOUS));
-        if (page < maxPage) inventory.setItem(NEXT_SLOT, createNavigationItem(NEXT));
+        if (page < maxPage || allowNewNextPage) inventory.setItem(NEXT_SLOT, createNavigationItem(NEXT));
     }
 
     public static boolean isPrevious(ItemStack item) {
