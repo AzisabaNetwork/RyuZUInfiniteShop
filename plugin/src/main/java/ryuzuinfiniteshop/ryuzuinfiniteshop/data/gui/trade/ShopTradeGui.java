@@ -58,9 +58,7 @@ public abstract class ShopTradeGui extends ShopGui {
             if (mode.equals(ShopMode.TRADE)) inv.setItem(i, ShopTrade.getFilter());
         }
         boolean allowNewNextPage = mode.equals(ShopMode.EDIT)
-                && getPage() == getShop().getPageCount()
-                && !getShop().getTrades().isEmpty()
-                && getShop().ableCreateNewPage();
+                && getPage() == getShop().getPageCount();
         PageNavigationUtil.setNavigationItems(inv, getPage(), getShop().getPageCount(), allowNewNextPage);
 
         return inv;
