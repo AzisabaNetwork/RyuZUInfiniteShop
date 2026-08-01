@@ -766,6 +766,7 @@ public class Shop {
             default:
                 spawnNPC(EntityType.valueOf(entityType));
                 npc = getEntity();
+                if (npc == null) return;
                 npc.setCustomName(displayName);
                 npc.getPassengers().forEach(Entity::remove);
                 Optional.ofNullable(npc.getVehicle()).ifPresent(Entity::remove);
