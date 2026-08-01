@@ -77,3 +77,9 @@ tasks {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
+
+tasks.processResources {
+    filesMatching("plugin.yml") {
+        expand(mapOf("version" to rootProject.version))
+    }
+}
