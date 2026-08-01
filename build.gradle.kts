@@ -35,7 +35,6 @@ tasks.withType<Javadoc> {
 
 dependencies {
     api(project(":searchableinfiniteshop-plugin"))
-    api(project(":searchableinfiniteshop-v16newer"))
     api(project(":searchableinfiniteshop-v16older"))
     api(project(":searchableinfiniteshop-api"))
 }
