@@ -48,6 +48,7 @@ repositories {
 }
 
 dependencies {
+    implementation("com.google.code.gson:gson:2.11.0")
     api("com.github.Y-RyuZU:RyuZUCommandsGenerator:2.3")
     implementation("com.saicone.rtag:rtag:1.4.2")
     implementation("com.saicone.rtag:rtag-entity:1.4.2")
@@ -69,6 +70,7 @@ dependencies {
 
 tasks {
     shadowJar {
+        relocate("com.google.gson", "${project.group}.libs.gson")
         // Relocate rtag (DO NOT IGNORE THIS)
         relocate("com.saicone.rtag", "${project.group}.libs.rtag")
         // Exclude unused classes (optional)
