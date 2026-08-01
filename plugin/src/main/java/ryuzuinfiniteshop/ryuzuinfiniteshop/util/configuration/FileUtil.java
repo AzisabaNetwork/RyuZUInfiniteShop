@@ -17,10 +17,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FileUtil {
     @Getter
-    private static boolean saveBlock = false;
+    private static final AtomicBoolean saveBlock = new AtomicBoolean(false);
 
     public static File initializeFile(String path) {
         String[] splited = path.split("/");
@@ -44,10 +45,9 @@ public class FileUtil {
     }
 
     public static boolean reloadAllWithMessage() {
-        if (saveBlock) return false;
-
+        if (!saveBlock.compareAndSet(false, true)) return false;
+        try {
         ShopUtil.removeAllNPC();
-        saveBlock = true;
         Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_FILES.getMessage()));
         HashMap<Player, ShopHolder> viewer = ShopUtil.getAllShopInventoryViewer();
         Config.load();
@@ -61,32 +61,43 @@ public class FileUtil {
         DisplayPanelConfig.load();
         boolean converted = ShopUtil.loadAllShops();
         TradeUtil.loadTradeOptions();
-        saveBlock = false;
-        if (converted) saveAll();
+        if (converted) Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), FileUtil::saveAll);
         Config.runAutoSave();
         Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_COMPLETE.getMessage()));
         ShopUtil.getShops().values().forEach(Shop::respawnNPC);
         ShopUtil.openAllShopInventory(viewer);
         return true;
+        } catch (Exception e) {
+            RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to reload shop data: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            saveBlock.set(false);
+        }
     }
 
     public static boolean loadAll() {
-        if (saveBlock) return false;
-
+        if (!saveBlock.compareAndSet(false, true)) return false;
+        try {
         ShopUtil.removeAllNPC();
-        saveBlock = true;
         Config.load();
         LanguageConfig.load();
         DisplayPanelConfig.load();
         UnderstandSystemConfig.load();
         boolean converted = ShopUtil.loadAllShops();
         TradeUtil.loadTradeOptions();
-        saveBlock = false;
-        if (converted) saveAll(false);
+        if (converted) Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> saveAll(false));
         Config.runAutoSave();
         Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_LOADING_COMPLETE.getMessage()));
         ShopUtil.getShops().values().forEach(Shop::respawnNPC);
         return true;
+        } catch (Exception e) {
+            RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to load shop data: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            saveBlock.set(false);
+        }
     }
 
     public static boolean saveAll() {
@@ -94,22 +105,23 @@ public class FileUtil {
     }
 
     public static boolean saveAll(boolean message) {
-        if (saveBlock) return false;
-
-        saveBlock = true;
-        Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
+        if (!saveBlock.compareAndSet(false, true)) return false;
+        try {
             TradeUtil.saveTradeOptions();
             ShopUtil.saveAllShops();
             UnderstandSystemConfig.save();
             Config.save();
             LanguageConfig.save();
             DisplayPanelConfig.save();
-            Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> {
-                saveBlock = false;
-                if(message) Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_SAVING_COMPLETE.getMessage()));
-            });
-        });
-        return true;
+            if(message) Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_SAVING_COMPLETE.getMessage()));
+            return true;
+        } catch (Exception e) {
+            RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to save shop data: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            saveBlock.set(false);
+        }
     }
 
     public static void saveAllSync() {
@@ -124,17 +136,21 @@ public class FileUtil {
     }
 
     public static boolean isSaveBlock(Player p) {
-        if (saveBlock) {
+        if (saveBlock.get()) {
             p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_FILES_RELOADING_BLOCKED.getMessage());
             SoundUtil.playFailSound(p);
         }
-        return saveBlock;
+        return saveBlock.get();
     }
 
     public static boolean isSaveBlock(CommandData data) {
-        if (saveBlock)
+        if (saveBlock.get())
             data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_FILES_RELOADING_BLOCKED.getMessage());
 
-        return saveBlock;
+        return saveBlock.get();
+    }
+
+    public static boolean isSaveBlock() {
+        return saveBlock.get();
     }
 }
