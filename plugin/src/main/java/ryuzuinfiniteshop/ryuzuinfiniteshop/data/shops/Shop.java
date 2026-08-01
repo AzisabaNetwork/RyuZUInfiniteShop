@@ -176,7 +176,7 @@ public class Shop {
     }
 
     // 重複している取引があればtrueを返す
-    public boolean checkTrades(Inventory inv) {
+    public boolean checkTrades(Inventory inv, Player player) {
         ShopHolder holder = ShopUtil.getShopHolder(inv);
         if (holder == null) return false;
         ShopTradeGui gui = getPage(holder.getGui().getPage());
@@ -206,17 +206,17 @@ public class Shop {
                 // 取引を追加
                 trades.add(expectedTrade);
                 expectedTrade.setTradeOption(option, false);
-                LogUtil.log(LogUtil.LogType.ADDTRADE, inv.getViewers().get(0).getName(), getID(), expectedTrade, expectedTrade.getLimit());
+                LogUtil.log(LogUtil.LogType.ADDTRADE, player.getName(), getID(), expectedTrade, expectedTrade.getLimit());
             } else if (available) {
                 // 取引を上書き
                 if (!(trade.equals(expectedTrade) && trade.getOption().equals(option)))
-                    LogUtil.log(LogUtil.LogType.REPLACETRADE, inv.getViewers().get(0).getName(), getID(), trade, expectedTrade, trade.getOption(), expectedTrade.getOption());
+                    LogUtil.log(LogUtil.LogType.REPLACETRADE, player.getName(), getID(), trade, expectedTrade, trade.getOption(), expectedTrade.getOption());
                 trade.setTrade(expectedTrade);
                 trade.setTradeOption(option, true);
             } else if (trade != null) {
                 // 取引を削除する
                 emptyTrades.add(trade);
-                LogUtil.log(LogUtil.LogType.REMOVETRADE, inv.getViewers().get(0).getName(), getID(), trade, trade.getLimit());
+                LogUtil.log(LogUtil.LogType.REMOVETRADE, player.getName(), getID(), trade, trade.getLimit());
             }
         }
         this.trades.removeAll(emptyTrades);

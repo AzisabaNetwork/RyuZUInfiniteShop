@@ -161,7 +161,7 @@ public class OpenShopListener implements Listener {
                 fail = true;
                 if (holder.getMode().equals(ShopMode.EDIT)) {
                     //取引を上書きし、取引として成立しないものは削除する
-                    boolean warn = shop.checkTrades(inv);
+                    boolean warn = shop.checkTrades(inv, p);
                     if (warn) {
                         p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_ERROR_TRADE_DUPLICATE.getMessage());
                         p.openInventory(shop.getPage(page).getInventory(mode, p, holder.getBefore()));

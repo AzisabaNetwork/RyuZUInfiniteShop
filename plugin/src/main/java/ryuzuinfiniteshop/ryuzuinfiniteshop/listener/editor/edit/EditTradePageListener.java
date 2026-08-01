@@ -50,7 +50,7 @@ public class EditTradePageListener implements Listener {
         if (FileUtil.isSaveBlock(p)) return;
 
         //取引を上書きし、取引として成立しないものは削除する
-        boolean warn = shop.checkTrades(inv);
+        boolean warn = shop.checkTrades(inv, p);
         if (warn)
             p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_ERROR_TRADE_DUPLICATE.getMessage());
     }
