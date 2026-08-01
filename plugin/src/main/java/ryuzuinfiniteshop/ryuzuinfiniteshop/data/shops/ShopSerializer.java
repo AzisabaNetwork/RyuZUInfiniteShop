@@ -8,12 +8,11 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.ObjectItems;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.CitizensHandler;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.FileUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
 
 import java.io.File;
@@ -34,7 +33,7 @@ public final class ShopSerializer {
      * Returns the YAML file path for a shop.
      */
     public static File getFile(Shop shop) {
-        return FileUtil.initializeFile("shops/" + shop.getID() + ".yml");
+        return new File(RyuZUInfiniteShop.getPlugin().getDataFolder(), "shops/" + shop.getID() + ".yml");
     }
 
     /**
@@ -45,10 +44,12 @@ public final class ShopSerializer {
         YamlConfiguration yaml = new YamlConfiguration();
         populateYaml(shop, yaml);
         try {
+            File parent = file.getParentFile();
+            if (!parent.exists() && !parent.mkdirs())
+                throw new IOException("Could not create directory " + parent);
             yaml.save(file);
         } catch (IOException e) {
-            if (!Config.readOnlyIgnoreIOException)
-                throw new RuntimeException(LanguageKey.ERROR_FILE_SAVING.getMessage(file.getName()), e);
+            throw new RuntimeException(LanguageKey.ERROR_FILE_SAVING.getMessage(file.getName()), e);
         }
         return yaml;
     }
@@ -58,10 +59,14 @@ public final class ShopSerializer {
      */
     public static void load(Shop shop, File file) {
         YamlConfiguration config = new YamlConfiguration();
+        if (!file.isFile()) {
+            applyYaml(shop, config);
+            return;
+        }
         try {
             config.load(file);
         } catch (IOException | InvalidConfigurationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(LanguageKey.ERROR_FILE_LOADING.getMessage(file.getName()), e);
         }
         applyYaml(shop, config);
         shop.updateTradeContents();

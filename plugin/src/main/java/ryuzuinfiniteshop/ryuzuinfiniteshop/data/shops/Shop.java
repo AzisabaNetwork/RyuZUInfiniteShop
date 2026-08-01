@@ -104,16 +104,17 @@ public class Shop {
     }
 
     private void initialize(Location location, Runnable beforeInitializer, Runnable afterInitializer) {
-        boolean existed = new File(RyuZUInfiniteShop.getPlugin().getDataFolder(), "shops/" + LocationUtil.toStringFromLocation(location) + ".yml").exists();
         this.location = location;
-        ShopUtil.addShop(getID(), this);
         beforeInitializer.run();
-        loadYamlProcess(getFile());
+        File file = getFile();
+        boolean existed = file.isFile();
+        loadYamlProcess(file);
         afterInitializer.run();
         if (!existed) {
             createEditorNewPage();
             saveYaml();
         }
+        ShopUtil.addShop(getID(), this);
     }
 
     public void loadYamlProcess(File file) {

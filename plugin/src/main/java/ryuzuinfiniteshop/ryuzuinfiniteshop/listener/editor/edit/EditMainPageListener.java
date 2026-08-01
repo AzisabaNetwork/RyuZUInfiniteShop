@@ -7,7 +7,6 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.editor.ShopEditorGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopMode;
@@ -51,7 +50,7 @@ public class EditMainPageListener implements Listener {
         ShopHolder shopholder = (ShopHolder) inv.getHolder();
         Shop shop = shopholder.getShop();
 
-        if (Config.autoSaveInterval <= 0) shop.saveYaml();
+        shop.saveYaml();
         shop.setEditting(false);
     }
 
