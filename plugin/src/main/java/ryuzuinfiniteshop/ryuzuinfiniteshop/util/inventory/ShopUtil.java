@@ -164,6 +164,7 @@ public class ShopUtil {
                     }
                     shop.setTrades(trades);
                     shop.setSearchable(Config.defaultSearchableInConverting);
+                    shop.saveYaml();
                     keys.add(key);
                 }
             } catch (Exception e) {
