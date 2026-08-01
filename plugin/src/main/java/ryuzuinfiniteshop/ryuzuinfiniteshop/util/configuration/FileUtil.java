@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class FileUtil {
     @Getter
     private static final AtomicBoolean saveBlock = new AtomicBoolean(false);
+    private static final Object saveLock = new Object();
 
     public static File initializeFile(String path) {
         String[] splited = path.split("/");
@@ -106,33 +107,41 @@ public class FileUtil {
 
     public static boolean saveAll(boolean message) {
         if (!saveBlock.compareAndSet(false, true)) return false;
-        try {
+        Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
+            try {
+                saveAllData();
+                if (message) {
+                    Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () ->
+                            Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_SAVING_COMPLETE.getMessage()))
+                    );
+                }
+            } catch (Exception e) {
+                RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to save shop data: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                saveBlock.set(false);
+            }
+        });
+        return true;
+    }
+
+    public static void saveAllSync() {
+        synchronized (saveLock) {
+            ShopUtil.removeAllNPC();
+            ShopUtil.getAllShopInventoryViewer();
+            saveAllData();
+        }
+    }
+
+    private static void saveAllData() {
+        synchronized (saveLock) {
             TradeUtil.saveTradeOptions();
             ShopUtil.saveAllShops();
             UnderstandSystemConfig.save();
             Config.save();
             LanguageConfig.save();
             DisplayPanelConfig.save();
-            if(message) Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_SAVING_COMPLETE.getMessage()));
-            return true;
-        } catch (Exception e) {
-            RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to save shop data: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        } finally {
-            saveBlock.set(false);
         }
-    }
-
-    public static void saveAllSync() {
-        ShopUtil.removeAllNPC();
-        ShopUtil.getAllShopInventoryViewer();
-        TradeUtil.saveTradeOptions();
-        ShopUtil.saveAllShops();
-        UnderstandSystemConfig.save();
-        DisplayPanelConfig.save();
-        Config.save();
-        LanguageConfig.save();
     }
 
     public static boolean isSaveBlock(Player p) {
