@@ -18,6 +18,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopMode;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.trade.ShopTradeGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.ShopItemStorage;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.ShopType;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.FileUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.LogUtil;
@@ -45,6 +46,10 @@ public class ConvertListener implements Listener {
 
         //コンバート
         ItemStack item = shop.convertShopToItemStack();
+        if (item == null) {
+            SoundUtil.playFailSound(p);
+            return;
+        }
         if (ItemUtil.ableGive(p.getInventory(), item)) {
             p.getInventory().addItem(item);
             SoundUtil.playSuccessSound(p);
@@ -96,8 +101,22 @@ public class ConvertListener implements Listener {
         ItemStack item = event.getCursor();
         String tag = NBTUtil.getNMSStringTag(item, "ShopType");
         int slot = event.getSlot();
-
         if (slot != 5 * 9 + 8) return;
+        if ((!click.isRightClick() && !click.isLeftClick()) || click.isShiftClick()) return;
+        ShopItemStorage.StoredShop storedShop = ShopItemStorage.load(NBTUtil.getNMSStringTag(item, "ShopItemId"));
+        if (storedShop != null) {
+            if (!shop.getShopType().equals(ShopType.TwotoOne)) {
+                if (!storedShop.shopType().equals(shop.getShopType())) {
+                    SoundUtil.playFailSound(p);
+                    p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_ERROR_NOT_MATCH.getMessage());
+                    return;
+                }
+            }
+            shop.addAllTrades(storedShop.trades());
+            holder.getGui().reloadInventory(event.getClickedInventory());
+            SoundUtil.playSuccessSound(p);
+            return;
+        }
         if (tag == null) {
             SoundUtil.playFailSound(p);
             return;
@@ -143,12 +162,15 @@ public class ConvertListener implements Listener {
         if (!p.hasPermission("sis.op")) return;
         if (!p.isSneaking()) return;
         String shopData = NBTUtil.getNMSStringTag(item, "ShopData");
+        ShopItemStorage.StoredShop storedShop = ShopItemStorage.load(NBTUtil.getNMSStringTag(item, "ShopItemId"));
+        if (storedShop != null) shopData = storedShop.shopData();
         if (ItemUtil.isAir(item) || shopData == null) return;
         if (block == null) return;
         if (FileUtil.isSaveBlock(p)) return;
 
         //ショップを読み込む
-        Shop shop = ShopUtil.reloadShop(block.getLocation().add(0, 1, 0), shopData, TradeUtil.convertTradesToList(item));
+        Shop shop = ShopUtil.reloadShop(block.getLocation().add(0, 1, 0), shopData,
+                storedShop == null ? TradeUtil.convertTradesToList(item) : storedShop.trades());
         shop.respawnNPC();
 
         //音を出し、メッセージを送信

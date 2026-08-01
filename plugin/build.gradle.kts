@@ -38,6 +38,7 @@ repositories {
 }
 
 dependencies {
+    implementation("com.google.code.gson:gson:2.11.0")
 //    implementation("de.tr7zw:item-nbt-api:2.12.0")
     api("com.google.guava:guava:31.1-jre")
     api(project(":searchableinfiniteshop-v21newer"))
@@ -72,6 +73,7 @@ dependencies {
 
 tasks {
     shadowJar {
+        relocate("com.google.gson", "${project.group}.libs.gson")
         // Exclude unused classes (optional)
         minimize()
     }

@@ -242,8 +242,7 @@ public class Shop {
                                                         ChatColor.YELLOW + LanguageKey.ITEM_SHOP_COMPRESSION_GEM_TYPE.getMessage() + type.getShopTypeDisplay()
         );
         ItemUtil.withItemInfo(item, getTrades().stream().limit(5).map(ShopTrade::getFirstGiveTakeItem).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)));
-        item = NBTUtil.setNMSTag(item, convertShopToMap(convertTradesToMap()));
-        return item;
+        return setStoredShopId(item, getTrades());
     }
 
     public ItemStack convertShopToItemStack(Inventory inv, int slot) {
@@ -257,8 +256,13 @@ public class Shop {
         if (trade == null) return null;
 
         ItemUtil.withItemInfo(item, new LinkedHashMap<>(Map.of(trade.getFirstGiveTakeItem().getKey(), trade.getFirstGiveTakeItem().getValue())));
-        item = NBTUtil.setNMSTag(item, convertShopToMap(convertOneTradeToMap(inv, slot)));
-        return item;
+        return setStoredShopId(item, List.of(trade));
+    }
+
+    private ItemStack setStoredShopId(ItemStack item, List<ShopTrade> storedTrades) {
+        String id = ShopItemStorage.save(this, storedTrades);
+        if (id == null) return null;
+        return NBTUtil.setNMSTag(item, new HashMap<>(Map.of("ShopItemId", id)));
     }
 
     public boolean loadTrades(ItemStack item, Player p) {
