@@ -61,7 +61,7 @@ public class FileUtil {
         DisplayPanelConfig.load();
         boolean converted = ShopUtil.loadAllShops();
         TradeUtil.loadTradeOptions();
-        if (converted) Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), FileUtil::saveAll);
+        if (converted) Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> saveAll());
         Config.runAutoSave();
         Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_COMPLETE.getMessage()));
         ShopUtil.getShops().values().forEach(Shop::respawnNPC);

@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 
 @Getter
 public class VillagerableShop extends AgeableShop {
-    protected Villager.Profession profession = NONE;
-    protected Villager.Type biome = PLAINS;
+    protected Villager.Profession profession = Villager.Profession.NONE;
+    protected Villager.Type biome = Villager.Type.PLAINS;
     protected int level = 1;
     private static final Random random = new Random();
 
@@ -32,7 +32,7 @@ public class VillagerableShop extends AgeableShop {
     }
 
     public void setProfession(Villager.Profession profession) {
-        this.profession = JavaUtil.getOrDefault(profession, NONE);
+        this.profession = JavaUtil.getOrDefault(profession, Villager.Profession.NONE);
         Entity npc = getEntity();
         if (npc == null) return;
         if (npc instanceof Villager) {
@@ -50,7 +50,7 @@ public class VillagerableShop extends AgeableShop {
     }
 
     public void setBiome(Villager.Type villagertype) {
-        this.biome = JavaUtil.getOrDefault(villagertype, PLAINS);
+        this.biome = JavaUtil.getOrDefault(villagertype, Villager.Type.PLAINS);
         Entity npc = getEntity();
         if (npc == null) return;
         if (npc instanceof Villager)

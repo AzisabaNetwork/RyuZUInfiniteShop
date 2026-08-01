@@ -31,9 +31,6 @@ repositories {
         url = uri("https://repo.codemc.io/repository/maven-public/")
     }
     maven {
-        url = uri("https://nexus.lichtspiele.org/repository/releases/")
-    }
-    maven {
         url = uri("https://libraries.minecraft.net/")
     }
     maven {
