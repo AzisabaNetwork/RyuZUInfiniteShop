@@ -21,7 +21,7 @@ allprojects {
 }
 
 group = "com.github.ryuzu"
-version = "1.0.3"
+version = "1.21.11+1.0.4"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
