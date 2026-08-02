@@ -14,6 +14,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.scheduler.BukkitTask;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ModeHolder;
@@ -113,11 +115,18 @@ public class ShopUtil {
      * removing existing entities or reloading the shop YAML files.
      */
     public static void respawnMissingMythicShopNPCs() {
-        for (Shop shop : getShops().values()) {
-            if (shop.getNpcType().equals(NpcType.MYTHICMOB)) {
-                shop.respawnNPC();
+        Iterator<Shop> shops = new ArrayList<>(getShops().values()).iterator();
+        Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), (BukkitTask task) -> {
+            for (int processed = 0; processed < 4 && shops.hasNext(); processed++) {
+                Shop shop = shops.next();
+                if (shop.getNpcType().equals(NpcType.MYTHICMOB)) {
+                    shop.respawnNPC();
+                }
             }
-        }
+            if (!shops.hasNext()) {
+                task.cancel();
+            }
+        }, 1L, 1L);
     }
 
     public static Shop reloadShop(Shop shop) {

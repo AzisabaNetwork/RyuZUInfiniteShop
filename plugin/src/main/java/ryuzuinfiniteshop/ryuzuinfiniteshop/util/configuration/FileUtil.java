@@ -17,12 +17,21 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FileUtil {
     @Getter
     private static final AtomicBoolean saveBlock = new AtomicBoolean(false);
     private static final Object saveLock = new Object();
+    /**
+     * YAML serialization and disk writes are blocking work. A dedicated Java 21
+     * virtual thread keeps them out of both the server thread and Bukkit's shared
+     * asynchronous scheduler.
+     */
+    private static final ExecutorService saveExecutor = Executors.newSingleThreadExecutor(
+            Thread.ofVirtual().name("SearchableInfiniteShop-Save-", 0).factory());
 
     public static File initializeFile(String path) {
         String[] splited = path.split("/");
@@ -107,7 +116,7 @@ public class FileUtil {
 
     public static boolean saveAll(boolean message) {
         if (!saveBlock.compareAndSet(false, true)) return false;
-        Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
+        saveExecutor.execute(() -> {
             boolean saved = false;
             try {
                 saveAllData();
@@ -136,6 +145,11 @@ public class FileUtil {
             ShopUtil.getAllShopInventoryViewer();
             saveAllData();
         }
+    }
+
+    /** Stops the background saver during plugin shutdown after pending work completes. */
+    public static void shutdownSaver() {
+        saveExecutor.shutdown();
     }
 
     private static void saveAllData() {

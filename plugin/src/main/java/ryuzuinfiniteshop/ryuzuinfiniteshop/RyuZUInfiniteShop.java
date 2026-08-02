@@ -53,6 +53,7 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        FileUtil.shutdownSaver();
         FileUtil.saveAllSync();
     }
 
