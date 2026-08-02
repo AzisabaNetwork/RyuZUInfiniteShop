@@ -23,7 +23,7 @@ repositories {
 }
 
 group = "com.github.ryuzu"
-version = "1.13+1.0.6"
+version = "1.13+1.0.7"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
