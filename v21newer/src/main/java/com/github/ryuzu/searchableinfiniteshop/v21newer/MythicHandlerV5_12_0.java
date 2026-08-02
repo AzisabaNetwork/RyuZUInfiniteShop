@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 
 public class MythicHandlerV5_12_0 implements IMythicHandler, Listener {
@@ -67,6 +68,11 @@ public class MythicHandlerV5_12_0 implements IMythicHandler, Listener {
         } catch (InvalidMobTypeException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
+            getMythicMobsInstance().getLogger().log(
+                    Level.WARNING,
+                    "Failed to spawn MythicMob shop NPC (MMID: " + id + ", location: " + location + ")",
+                    e
+            );
             return null;
         }
     }

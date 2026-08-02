@@ -57,7 +57,9 @@ public abstract class ShopTradeGui extends ShopGui {
         for (int i = function.apply(getTrades().size()); i < PageNavigationUtil.PREVIOUS_SLOT; i++) {
             if (mode.equals(ShopMode.TRADE)) inv.setItem(i, ShopTrade.getFilter());
         }
-        PageNavigationUtil.setNavigationItems(inv, getPage(), getShop().getPageCount());
+        boolean allowNewNextPage = mode.equals(ShopMode.EDIT)
+                && getPage() == getShop().getPageCount();
+        PageNavigationUtil.setNavigationItems(inv, getPage(), getShop().getPageCount(), allowNewNextPage);
 
         return inv;
     }

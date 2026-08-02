@@ -173,6 +173,7 @@ public final class ShopNPCManager {
         EntityType entityType = EntityType.valueOf(shop.entityType);
         Location spawnLoc = LocationUtil.getMiddleLocation(shop.location);
         Entity npc = EntityUtil.spawnEntity(spawnLoc, entityType);
+        if (npc == null) return;
         shop.uuid = npc.getUniqueId();
         npc.teleport(LocationUtil.toBlockLocationFromLocation(shop.location));
         setNpcMeta(shop, npc);

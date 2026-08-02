@@ -108,6 +108,18 @@ public class ShopUtil {
         }
     }
 
+    /**
+     * Restores MythicMob-backed shop NPCs after an asynchronous save without
+     * removing existing entities or reloading the shop YAML files.
+     */
+    public static void respawnMissingMythicShopNPCs() {
+        for (Shop shop : getShops().values()) {
+            if (shop.getNpcType().equals(NpcType.MYTHICMOB)) {
+                shop.respawnNPC();
+            }
+        }
+    }
+
     public static Shop reloadShop(Shop shop) {
         return reloadShop(shop.getLocation(), shop.convertShopToString(), TradeUtil.convertTradesToList(shop.convertTradesToMap()));
     }
