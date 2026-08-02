@@ -11,7 +11,9 @@ import java.util.function.Consumer;
 
 public class AgeableShop extends Shop {
     @Getter
-    protected boolean adult;
+    // Bukkit spawns ageable entities as adults. Preserve that default unless the
+    // shop configuration explicitly switches the appearance to a baby.
+    protected boolean adult = true;
 
     public AgeableShop(Location location, String entityType, ConfigurationSection config) {
         super(location, entityType, config);

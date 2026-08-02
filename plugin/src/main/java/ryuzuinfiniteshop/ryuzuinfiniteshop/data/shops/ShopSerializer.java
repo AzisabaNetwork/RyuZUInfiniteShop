@@ -42,7 +42,7 @@ public final class ShopSerializer {
     public static YamlConfiguration save(Shop shop) {
         File file = getFile(shop);
         YamlConfiguration yaml = new YamlConfiguration();
-        populateYaml(shop, yaml);
+        shop.getSaveYamlProcess().accept(yaml);
         try {
             File parent = file.getParentFile();
             if (!parent.exists() && !parent.mkdirs())
@@ -60,7 +60,7 @@ public final class ShopSerializer {
     public static void load(Shop shop, File file) {
         YamlConfiguration config = new YamlConfiguration();
         if (!file.isFile()) {
-            applyYaml(shop, config);
+            shop.getLoadYamlProcess().accept(config);
             return;
         }
         try {
@@ -68,8 +68,7 @@ public final class ShopSerializer {
         } catch (IOException | InvalidConfigurationException e) {
             throw new RuntimeException(LanguageKey.ERROR_FILE_LOADING.getMessage(file.getName()), e);
         }
-        applyYaml(shop, config);
-        shop.updateTradeContents();
+        shop.getLoadYamlProcess().accept(config);
     }
 
     /**
