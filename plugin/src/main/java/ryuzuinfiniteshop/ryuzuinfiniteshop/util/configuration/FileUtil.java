@@ -108,8 +108,10 @@ public class FileUtil {
     public static boolean saveAll(boolean message) {
         if (!saveBlock.compareAndSet(false, true)) return false;
         Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
+            boolean saved = false;
             try {
                 saveAllData();
+                saved = true;
                 if (message) {
                     Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () ->
                             Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_SAVING_COMPLETE.getMessage()))
@@ -120,6 +122,9 @@ public class FileUtil {
                 e.printStackTrace();
             } finally {
                 saveBlock.set(false);
+                if (saved) {
+                    Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), ShopUtil::respawnMissingMythicShopNPCs);
+                }
             }
         });
         return true;

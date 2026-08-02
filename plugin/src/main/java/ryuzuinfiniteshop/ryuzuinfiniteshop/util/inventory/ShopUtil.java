@@ -205,6 +205,18 @@ public class ShopUtil {
         }
     }
 
+    /**
+     * Restores only MythicMob-backed shop NPCs after an asynchronous save.
+     * Unlike a full reload this neither removes existing entities nor reloads YAML files.
+     */
+    public static void respawnMissingMythicShopNPCs() {
+        for (Shop shop : getShops().values()) {
+            if (shop.getNpcType().equals(NpcType.MYTHICMOB)) {
+                shop.respawnNPC();
+            }
+        }
+    }
+
     public static LinkedHashMap<String, Shop> getSortedShops(ShopMode mode, String name) {
         LinkedHashMap<String, Shop> sorted = new LinkedHashMap<>();
         if (mode.equals(ShopMode.EDIT))
