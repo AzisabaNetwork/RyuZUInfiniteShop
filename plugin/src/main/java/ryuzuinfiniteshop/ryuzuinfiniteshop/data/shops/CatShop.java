@@ -38,7 +38,12 @@ public class CatShop extends SittableShop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.type = Cat.Type.valueOf(yaml.getString("Npc.Options.CatType", "TABBY"));
+            String raw = yaml.getString("Npc.Options.CatType", "TABBY");
+            try {
+                this.type = Cat.Type.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(raw, "TABBY"));
+            } catch (Exception e) {
+                this.type = Cat.Type.TABBY;
+            }
         });
     }
 

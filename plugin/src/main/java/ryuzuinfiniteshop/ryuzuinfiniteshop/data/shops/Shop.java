@@ -471,8 +471,12 @@ public class Shop {
         if (this instanceof PoweredableShop)
             ((PoweredableShop) this).setPowered(section.getBoolean("powered", false));
         if (this instanceof HorseShop) {
-            ((HorseShop) this).setColor(Horse.Color.valueOf(section.getString("color", "WHITE")));
-            ((HorseShop) this).setStyle(Horse.Style.valueOf(section.getString("style", "NONE")));
+            try {
+                ((HorseShop) this).setColor(Horse.Color.valueOf(JavaUtil.cleanName(section.getString("color", "WHITE"), "WHITE")));
+            } catch (Exception ignored) {}
+            try {
+                ((HorseShop) this).setStyle(Horse.Style.valueOf(JavaUtil.cleanName(section.getString("style", "NONE"), "NONE")));
+            } catch (Exception ignored) {}
         }
         if (this instanceof VillagerableShop) {
             IVillagerHandler handler = VillagerHandlerProvider.getHandler();
@@ -481,17 +485,22 @@ public class Shop {
             ((VillagerableShop) this).setBiome(Villager.Type.valueOf(handler.resolveBiome(section.getString("villagerType", handler.getDefaultBiomeName()))));
             ((VillagerableShop) this).setLevel(section.getInt("villagerLevel", 1));
         }
-        if (this instanceof ParrotShop)
-            ((ParrotShop) this).setColor(Parrot.Variant.valueOf(section.getString("parrotVariant", "RED")));
+        if (this instanceof ParrotShop) {
+            try {
+                ((ParrotShop) this).setColor(Parrot.Variant.valueOf(JavaUtil.cleanName(section.getString("parrotVariant", "RED"), "RED")));
+            } catch (Exception ignored) {}
+        }
         if (this instanceof DyeableShop) {
             String color;
             try {
                 Integer.parseInt(section.getString("color", "WHITE"));
                 color = DyeColor.values()[section.getInt("color", 0)].name();
             } catch (NumberFormatException e) {
-                color = section.getString("color", "WHITE");
+                color = JavaUtil.cleanName(section.getString("color", "WHITE"), "WHITE");
             }
-            ((DyeableShop) this).setColor(DyeColor.valueOf(color));
+            try {
+                ((DyeableShop) this).setColor(DyeColor.valueOf(color));
+            } catch (Exception ignored) {}
             ((DyeableShop) this).setOptionalInfo(
                     (
                             section.contains("angry") ? section.getBoolean("angry", false) :

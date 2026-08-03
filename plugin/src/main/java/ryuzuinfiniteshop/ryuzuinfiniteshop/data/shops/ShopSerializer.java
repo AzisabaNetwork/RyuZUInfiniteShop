@@ -156,8 +156,12 @@ public final class ShopSerializer {
         if (shop instanceof PoweredableShop)
             ((PoweredableShop) shop).setPowered(section.getBoolean("powered", false));
         if (shop instanceof HorseShop) {
-            ((HorseShop) shop).setColor(Horse.Color.valueOf(section.getString("color", "WHITE")));
-            ((HorseShop) shop).setStyle(Horse.Style.valueOf(section.getString("style", "NONE")));
+            try {
+                ((HorseShop) shop).setColor(Horse.Color.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(section.getString("color", "WHITE"), "WHITE")));
+            } catch (Exception ignored) {}
+            try {
+                ((HorseShop) shop).setStyle(Horse.Style.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(section.getString("style", "NONE"), "NONE")));
+            } catch (Exception ignored) {}
         }
         if (shop instanceof VillagerableShop) {
             com.github.ryuzu.searchableinfiniteshop.api.IVillagerHandler handler =
@@ -167,17 +171,22 @@ public final class ShopSerializer {
             ((VillagerableShop) shop).setBiome(Villager.Type.valueOf(handler.resolveBiome(section.getString("villagerType", handler.getDefaultBiomeName()))));
             ((VillagerableShop) shop).setLevel(section.getInt("villagerLevel", 1));
         }
-        if (shop instanceof ParrotShop)
-            ((ParrotShop) shop).setColor(Parrot.Variant.valueOf(section.getString("parrotVariant", "RED")));
+        if (shop instanceof ParrotShop) {
+            try {
+                ((ParrotShop) shop).setColor(Parrot.Variant.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(section.getString("parrotVariant", "RED"), "RED")));
+            } catch (Exception ignored) {}
+        }
         if (shop instanceof DyeableShop) {
             String color;
             try {
                 Integer.parseInt(section.getString("color", "WHITE"));
                 color = DyeColor.values()[section.getInt("color", 0)].name();
             } catch (NumberFormatException e) {
-                color = section.getString("color", "WHITE");
+                color = ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(section.getString("color", "WHITE"), "WHITE");
             }
-            ((DyeableShop) shop).setColor(DyeColor.valueOf(color));
+            try {
+                ((DyeableShop) shop).setColor(DyeColor.valueOf(color));
+            } catch (Exception ignored) {}
             ((DyeableShop) shop).setOptionalInfo(
                     (
                             section.contains("angry") ? section.getBoolean("angry", false) :

@@ -61,9 +61,21 @@ public class TropicalFishShop extends Shop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.bodyColor = DyeColor.valueOf(yaml.getString("Npc.Options.BodyColor", "RED"));
-            this.patternColor = DyeColor.valueOf(yaml.getString("Npc.Options.PatternColor", "RED"));
-            this.pattern = TropicalFish.Pattern.valueOf(yaml.getString("Npc.Options.Pattern", "KOB"));
+            try {
+                this.bodyColor = DyeColor.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(yaml.getString("Npc.Options.BodyColor", "RED"), "RED"));
+            } catch (Exception e) {
+                this.bodyColor = DyeColor.RED;
+            }
+            try {
+                this.patternColor = DyeColor.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(yaml.getString("Npc.Options.PatternColor", "RED"), "RED"));
+            } catch (Exception e) {
+                this.patternColor = DyeColor.RED;
+            }
+            try {
+                this.pattern = TropicalFish.Pattern.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(yaml.getString("Npc.Options.Pattern", "KOB"), "KOB"));
+            } catch (Exception e) {
+                this.pattern = TropicalFish.Pattern.KOB;
+            }
         });
     }
 

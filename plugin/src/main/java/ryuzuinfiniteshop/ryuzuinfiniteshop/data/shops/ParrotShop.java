@@ -41,7 +41,12 @@ public class ParrotShop extends SittableShop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.color = Parrot.Variant.valueOf(yaml.getString("Npc.Options.Color", "RED"));
+            String raw = yaml.getString("Npc.Options.Color", "RED");
+            try {
+                this.color = Parrot.Variant.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(raw, "RED"));
+            } catch (Exception e) {
+                this.color = Parrot.Variant.RED;
+            }
         });
     }
 

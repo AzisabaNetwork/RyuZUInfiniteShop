@@ -39,6 +39,26 @@ public class JavaUtil {
         return obj1 == null ? obj2 : obj1;
     }
 
+    private static final java.util.regex.Pattern MINECRAFT_KEY_PATTERN = java.util.regex.Pattern.compile("minecraft:([a-z0-9_]+)");
+
+    public static String cleanName(@Nullable String raw, String defaultValue) {
+        if (raw == null || raw.isBlank()) return defaultValue;
+        if (raw.contains("minecraft:")) {
+            java.util.regex.Matcher matcher = MINECRAFT_KEY_PATTERN.matcher(raw);
+            String foundKey = null;
+            while (matcher.find()) {
+                String candidate = matcher.group(1);
+                if (!candidate.endsWith("_type") && !candidate.endsWith("_variant") && !candidate.endsWith("_profession") && !candidate.endsWith("_color")) {
+                    foundKey = candidate;
+                }
+            }
+            if (foundKey != null) {
+                return foundKey.toUpperCase(java.util.Locale.ROOT);
+            }
+        }
+        return raw.toUpperCase(java.util.Locale.ROOT);
+    }
+
     public static boolean isEmptyString(@Nullable String str) {
         return str == null || ChatColor.stripColor(str).isEmpty();
     }

@@ -70,7 +70,12 @@ public class DyeableShop extends Shop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.color = DyeColor.valueOf(yaml.getString("Npc.Options.Color", "WHITE"));
+            String raw = yaml.getString("Npc.Options.Color", "WHITE");
+            try {
+                this.color = DyeColor.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(raw, "WHITE"));
+            } catch (Exception e) {
+                this.color = DyeColor.WHITE;
+            }
             this.optionalInfo = yaml.getBoolean("Npc.Options.OptionalInfo", false);
         });
     }

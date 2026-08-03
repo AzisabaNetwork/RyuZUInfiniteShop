@@ -58,8 +58,19 @@ public class HorseShop extends AgeableShop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.color = Horse.Color.valueOf(yaml.getString("Npc.Options.Color", "WHITE"));
-            this.style = Horse.Style.valueOf(yaml.getString("Npc.Options.Style", "NONE"));
+            String rawColor = yaml.getString("Npc.Options.Color", "WHITE");
+            try {
+                this.color = Horse.Color.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(rawColor, "WHITE"));
+            } catch (Exception e) {
+                this.color = Horse.Color.WHITE;
+            }
+
+            String rawStyle = yaml.getString("Npc.Options.Style", "NONE");
+            try {
+                this.style = Horse.Style.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(rawStyle, "NONE"));
+            } catch (Exception e) {
+                this.style = Horse.Style.NONE;
+            }
         });
     }
 

@@ -39,7 +39,12 @@ public class AxolotlShop extends Shop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.type = Axolotl.Variant.valueOf(yaml.getString("Npc.Options.Color", "LUCY"));
+            String raw = yaml.getString("Npc.Options.Color", "LUCY");
+            try {
+                this.type = Axolotl.Variant.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(raw, "LUCY"));
+            } catch (Exception e) {
+                this.type = Axolotl.Variant.LUCY;
+            }
         });
     }
 

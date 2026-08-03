@@ -38,7 +38,12 @@ public class RabbitShop extends Shop {
     @Override
     public Consumer<YamlConfiguration> getLoadYamlProcess() {
         return super.getLoadYamlProcess().andThen(yaml -> {
-            this.type = Rabbit.Type.valueOf(yaml.getString("Npc.Options.RabbitType", "BROWN"));
+            String raw = yaml.getString("Npc.Options.RabbitType", "BROWN");
+            try {
+                this.type = Rabbit.Type.valueOf(ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil.cleanName(raw, "BROWN"));
+            } catch (Exception e) {
+                this.type = Rabbit.Type.BROWN;
+            }
         });
     }
 

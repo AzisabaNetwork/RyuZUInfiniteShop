@@ -77,6 +77,12 @@ tasks {
         // Exclude unused classes (optional)
         minimize()
     }
+    processResources {
+        inputs.property("version", project.version)
+        filesMatching("plugin.yml") {
+            expand("version" to project.version)
+        }
+    }
 }
 
 tasks.withType<JavaCompile> {
