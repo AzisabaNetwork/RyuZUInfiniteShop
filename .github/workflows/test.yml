@@ -2,7 +2,7 @@ name: Run Tests
 
 on:
   push:
-    branches: [main, "ver/**"]
+    branches: [main, "ver/**", "dev/1.21.11"]
   pull_request:
     branches: [main, "feat/**"]
 
