@@ -10,6 +10,9 @@ plugins {
 }
 
 allprojects {
+    group = "com.github.ryuzu"
+    version = "1.21.11+1.0.5"
+
     repositories {
         mavenLocal()
         maven("https://repo.papermc.io/repository/maven-public/")
@@ -19,9 +22,6 @@ allprojects {
         maven("https://maven.citizensnpcs.co/repo")
     }
 }
-
-group = "com.github.ryuzu"
-version = "1.21.11+1.0.5"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
