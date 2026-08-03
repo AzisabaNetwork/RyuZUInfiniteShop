@@ -32,7 +32,7 @@ public class RabbitShop extends Shop {
 
     @Override
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
-        return super.getSaveYamlProcess().andThen(yaml -> yaml.set("Npc.Options.RabbitType", type.toString()));
+        return super.getSaveYamlProcess().andThen(yaml -> yaml.set("Npc.Options.RabbitType", type.name()));
     }
 
     @Override

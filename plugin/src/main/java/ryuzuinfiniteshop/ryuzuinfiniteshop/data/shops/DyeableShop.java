@@ -62,7 +62,7 @@ public class DyeableShop extends Shop {
     @Override
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
         return super.getSaveYamlProcess().andThen(yaml -> {
-            yaml.set("Npc.Options.Color", color.toString());
+            yaml.set("Npc.Options.Color", color.name());
             yaml.set("Npc.Options.OptionalInfo", optionalInfo);
         });
     }

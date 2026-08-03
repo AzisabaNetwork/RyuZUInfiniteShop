@@ -33,7 +33,7 @@ public class AxolotlShop extends Shop {
 
     @Override
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
-        return super.getSaveYamlProcess().andThen(yaml -> yaml.set("Npc.Options.Color", type.toString()));
+        return super.getSaveYamlProcess().andThen(yaml -> yaml.set("Npc.Options.Color", type.name()));
     }
 
     @Override

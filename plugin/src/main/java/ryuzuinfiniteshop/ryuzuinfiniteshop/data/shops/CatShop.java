@@ -32,7 +32,7 @@ public class CatShop extends SittableShop {
 
     @Override
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
-        return super.getSaveYamlProcess().andThen(yaml -> yaml.set("Npc.Options.CatType", type.toString()));
+        return super.getSaveYamlProcess().andThen(yaml -> yaml.set("Npc.Options.CatType", type.name()));
     }
 
     @Override

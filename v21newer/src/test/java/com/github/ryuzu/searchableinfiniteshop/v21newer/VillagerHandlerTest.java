@@ -79,4 +79,32 @@ class VillagerHandlerTest {
     void resolvePriestMapsToCleric() {
         assertEquals("CLERIC", handler.resolveProfession("PRIEST"));
     }
+
+    @Test
+    void resolveCraftProfessionCorruptedString() {
+        String corruptedString = "CraftProfession{holder=Reference{ResourceKey[minecraft:villager_profession / minecraft:none]=VillagerProfession[name=translation{key='entity.minecraft.villager.none', args=[]}]}}";
+        assertEquals("NONE", handler.resolveProfession(corruptedString));
+
+        String corruptedFarmer = "CraftProfession{holder=Reference{ResourceKey[minecraft:villager_profession / minecraft:farmer]=...}}";
+        assertEquals("FARMER", handler.resolveProfession(corruptedFarmer));
+    }
+
+    @Test
+    void resolveCraftTypeCorruptedString() {
+        String corruptedString = "CraftType{holder=Reference{ResourceKey[minecraft:villager_type / minecraft:plains]=VillagerType[...]}}";
+        assertEquals("PLAINS", handler.resolveBiome(corruptedString));
+
+        String corruptedDesert = "CraftType{holder=Reference{ResourceKey[minecraft:villager_type / minecraft:desert]=...}}";
+        assertEquals("DESERT", handler.resolveBiome(corruptedDesert));
+    }
+
+    @Test
+    void resolveInvalidProfessionReturnsDefault() {
+        assertEquals("NONE", handler.resolveProfession("INVALID_PROFESSION_NAME"));
+    }
+
+    @Test
+    void resolveInvalidBiomeReturnsDefault() {
+        assertEquals("PLAINS", handler.resolveBiome("INVALID_BIOME_NAME"));
+    }
 }

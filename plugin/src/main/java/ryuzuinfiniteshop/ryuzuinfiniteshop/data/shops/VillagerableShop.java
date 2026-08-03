@@ -85,8 +85,8 @@ public class VillagerableShop extends AgeableShop {
     @Override
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
         return super.getSaveYamlProcess().andThen(yaml -> {
-            yaml.set("Npc.Options.Profession", JavaUtil.getOrDefault(profession, Villager.Profession.FARMER).toString());
-            yaml.set("Npc.Options.Biome", JavaUtil.getOrDefault(biome, PLAINS).toString());
+            yaml.set("Npc.Options.Profession", JavaUtil.getOrDefault(profession, Villager.Profession.FARMER).name());
+            yaml.set("Npc.Options.Biome", JavaUtil.getOrDefault(biome, PLAINS).name());
             yaml.set("Npc.Options.Level", level);
         });
     }

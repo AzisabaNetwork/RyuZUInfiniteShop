@@ -50,8 +50,8 @@ public class HorseShop extends AgeableShop {
     @Override
     public Consumer<YamlConfiguration> getSaveYamlProcess() {
         return super.getSaveYamlProcess().andThen(yaml -> {
-            yaml.set("Npc.Options.Color", color.toString());
-            yaml.set("Npc.Options.Style", style.toString());
+            yaml.set("Npc.Options.Color", color.name());
+            yaml.set("Npc.Options.Style", style.name());
         });
     }
 
