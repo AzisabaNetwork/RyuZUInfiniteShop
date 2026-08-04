@@ -39,7 +39,18 @@ dependencies {
     api(project(":searchableinfiniteshop-api"))
 }
 
-// The API and version-adapter modules target Java 17+, so the shaded root
-// artifact must advertise the same runtime requirement for variant selection.
-java.sourceCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_11
+java.targetCompatibility = JavaVersion.VERSION_11
+
+subprojects {
+    plugins.withId("java") {
+        extensions.configure<org.gradle.api.plugins.JavaPluginExtension> {
+            sourceCompatibility = JavaVersion.VERSION_11
+            targetCompatibility = JavaVersion.VERSION_11
+        }
+        tasks.withType<JavaCompile>().configureEach {
+            options.release.set(11)
+        }
+    }
+}
 description = "Searchable Infinite Shop Plugin"
