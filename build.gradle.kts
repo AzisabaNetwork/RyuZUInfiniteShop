@@ -11,7 +11,7 @@ plugins {
 
 allprojects {
     group = "com.github.ryuzu"
-    version = "1.0.5+1.21.11"
+    version = "1.0.6+1.21.11"
 
     repositories {
         mavenLocal()

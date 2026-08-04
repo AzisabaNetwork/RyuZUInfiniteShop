@@ -33,6 +33,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode
 public class ShopTrade {
@@ -40,6 +41,15 @@ public class ShopTrade {
     public static final Table<UUID, UUID, Integer> tradeCounts = HashBasedTable.create();
     public static final HashMap<UUID, TradeOption> tradeOptions = new HashMap<>();
     private static final Random random = new Random();
+    private static final AtomicBoolean optionsDirty = new AtomicBoolean(true);
+
+    public static boolean consumeOptionsDirty() {
+        return optionsDirty.getAndSet(false);
+    }
+
+    public static void markOptionsDirty() {
+        optionsDirty.set(true);
+    }
 
     public enum TradeResult {NotEnoughMoney, NotEnoughItems, Fail, Full, Success, Lack, Limited, Locked, Error, Normal}
 
@@ -100,12 +110,14 @@ public class ShopTrade {
         if (!tradeUUID.containsKey(this)) return;
         if (getOption().getLimit() == 0) return;
         tradeCounts.put(player.getUniqueId(), tradeUUID.get(this), getTradeCount(player) + 1);
+        markOptionsDirty();
     }
 
     public void setTradeCount(Player player, int count) {
         if (!tradeUUID.containsKey(this)) return;
         if (getOption().getLimit() == 0) return;
         tradeCounts.put(player.getUniqueId(), tradeUUID.get(this), count);
+        markOptionsDirty();
     }
 
     public void saveTradeOption() {
@@ -194,6 +206,7 @@ public class ShopTrade {
             UUID uuid = tradeUUID.computeIfAbsent(this, key -> UUID.randomUUID());
             tradeOptions.put(uuid, option);
         }
+        markOptionsDirty();
     }
 
 //    public void setTradeOption(TradeOption option, boolean force) {

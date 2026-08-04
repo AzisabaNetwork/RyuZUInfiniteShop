@@ -110,6 +110,17 @@ public class ShopUtil {
         }
     }
 
+    public static void saveDirtyShops() {
+        for (Shop shop : getShops().values()) {
+            if (!shop.isDirty()) continue;
+            try {
+                shop.saveYaml();
+            } catch (Exception e) {
+                throw new RuntimeException(LanguageKey.ERROR_FILE_SAVING.getMessage(shop.getID()), e);
+            }
+        }
+    }
+
     /**
      * Restores MythicMob-backed shop NPCs after an asynchronous save without
      * removing existing entities or reloading the shop YAML files.

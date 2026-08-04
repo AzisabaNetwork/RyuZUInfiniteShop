@@ -61,6 +61,12 @@ public class TradeUtil {
         }
     }
 
+    /** Writes options.yml only when trade options or limited-trade counts changed. */
+    public static void saveDirtyTradeOptions() {
+        if (!ShopTrade.consumeOptionsDirty()) return;
+        saveTradeOptions();
+    }
+
     public static void loadTradeOptions() {
         File file = FileUtil.initializeFile("options.yml");
         YamlConfiguration config = new YamlConfiguration();

@@ -41,8 +41,10 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Shop {
+    private final AtomicBoolean dirty = new AtomicBoolean(true);
     @Getter
     protected UUID uuid;
     protected Entity hologram;
@@ -51,7 +53,6 @@ public class Shop {
     @Getter
     protected String displayName;
     @Getter
-    @Setter
     protected Location location;
     @Getter
     protected String mythicmob;
@@ -64,13 +65,10 @@ public class Shop {
     @Getter
     protected List<ShopTrade> trades = new ArrayList<>();
     protected ConfigurationSection shopkeepersConfig;
-    @Setter
     @Getter
     protected boolean lock = false;
-    @Setter
     @Getter
     protected boolean searchable = false;
-    @Setter
     @Getter
     protected boolean invisible = false;
     @Setter
@@ -140,6 +138,7 @@ public class Shop {
         if (!type.equals(ShopType.TwotoOne)) trades.clear();
         this.type = type.getNextShopType();
         updateTradeContents();
+        markDirty();
     }
 
     // 重複している取引があればtrueを返す
@@ -192,6 +191,7 @@ public class Shop {
 
         //ショップを更新する
         updateTradeContents();
+        markDirty();
         return duplication;
     }
 
@@ -276,6 +276,7 @@ public class Shop {
         temp.forEach(trade -> LogUtil.log(LogUtil.LogType.ADDTRADE, p.getName(), getID(), trade, trade.getLimit()));
         if (duplication) trades = trades.stream().distinct().collect(Collectors.toList());
         updateTradeContents();
+        markDirty();
         return duplication;
     }
 
@@ -301,12 +302,14 @@ public class Shop {
     public void setTrades(List<ShopTrade> trades) {
         this.trades = trades;
         updateTradeContents();
+        markDirty();
     }
 
     public void addAllTrades(List<ShopTrade> trades) {
         this.trades.addAll(trades);
         this.trades = this.trades.stream().distinct().collect(Collectors.toList());
         updateTradeContents();
+        markDirty();
     }
 
     public String getID() {
@@ -422,7 +425,37 @@ public class Shop {
     }
 
     public YamlConfiguration saveYaml() {
-        return ShopSerializer.save(this);
+        YamlConfiguration yaml = ShopSerializer.save(this);
+        dirty.set(false);
+        return yaml;
+    }
+
+    public boolean isDirty() {
+        return dirty.get();
+    }
+
+    public void markDirty() {
+        dirty.set(true);
+    }
+
+    public void setLocation(Location location) {
+        this.location = location;
+        markDirty();
+    }
+
+    public void setLock(boolean lock) {
+        this.lock = lock;
+        markDirty();
+    }
+
+    public void setSearchable(boolean searchable) {
+        this.searchable = searchable;
+        markDirty();
+    }
+
+    public void setInvisible(boolean invisible) {
+        this.invisible = invisible;
+        markDirty();
     }
 
     public File getFile() {
@@ -435,6 +468,7 @@ public class Shop {
 
     public void setDisplayName(String name) {
         this.displayName = name;
+        markDirty();
         Entity npc = getEntity();
         if (npc != null) npc.setCustomName(name);
         if ("BLOCK".equalsIgnoreCase(entityType)) {
@@ -530,6 +564,7 @@ public class Shop {
     public void setEquipmentItem(ItemStack item, int slot) {
         equipments.setObject(item, slot);
         updateEquipments();
+        markDirty();
     }
 
     public ItemStack getEquipmentDisplayItem(EquipmentSlot slot) {
@@ -591,6 +626,7 @@ public class Shop {
         this.mythicmob = null;
         this.uuid = null;
         this.citizen = null;
+        markDirty();
     }
 
     public void setMythicType(String mythicType) {
@@ -600,6 +636,7 @@ public class Shop {
         this.uuid = null;
         this.entityType = null;
         this.citizen = null;
+        markDirty();
     }
 
     public void setCitizen(Entity entity) {
@@ -609,6 +646,7 @@ public class Shop {
         this.citizen = CitizensHandler.getNpcUUID(entity);
         this.mythicmob = null;
         this.entityType = null;
+        markDirty();
     }
 
     public void setBlock() {
@@ -618,6 +656,7 @@ public class Shop {
         this.mythicmob = null;
         this.uuid = null;
         this.citizen = null;
+        markDirty();
     }
 
     public void removeNPC() {
