@@ -74,7 +74,7 @@ public class Config {
     public static void runAutoSave() {
         if (autoSaveTask != null) autoSaveTask.cancel();
         if (respawnTask != null) respawnTask.cancel();
-        if (autoSaveInterval > 0) autoSaveTask = Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), () -> FileUtil.saveAll(), 20L * 60 * autoSaveInterval, 20L * 60 * autoSaveInterval);
+        if (autoSaveInterval > 0) autoSaveTask = Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), () -> FileUtil.saveDirty(), 20L * 60 * autoSaveInterval, 20L * 60 * autoSaveInterval);
         respawnTask = Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), () -> ShopUtil.getShops().values().forEach(Shop::respawnNPC), 20L, 20L * 10);
     }
 }

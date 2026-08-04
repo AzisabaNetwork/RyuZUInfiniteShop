@@ -5,7 +5,7 @@
 plugins {
 //    id ("com.github.ryuzu.java-conventions")
     id("java-library")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 repositories {
@@ -23,7 +23,7 @@ repositories {
 }
 
 group = "com.github.ryuzu"
-version = "1.13+1.0.8"
+version = "1.0.9+1.13"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -39,5 +39,7 @@ dependencies {
     api(project(":searchableinfiniteshop-api"))
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_11
+// The API and version-adapter modules target Java 17+, so the shaded root
+// artifact must advertise the same runtime requirement for variant selection.
+java.sourceCompatibility = JavaVersion.VERSION_17
 description = "Searchable Infinite Shop Plugin"

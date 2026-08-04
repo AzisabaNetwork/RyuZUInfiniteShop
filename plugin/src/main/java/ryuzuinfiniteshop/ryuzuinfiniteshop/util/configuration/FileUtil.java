@@ -105,6 +105,22 @@ public class FileUtil {
         return saveAll(true);
     }
 
+    /** Flushes only data changed since the prior save; used by periodic autosave. */
+    public static boolean saveDirty() {
+        if (!saveBlock.compareAndSet(false, true)) return false;
+        Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
+            try {
+                saveDirtyData();
+            } catch (Exception e) {
+                RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to save changed shop data: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                saveBlock.set(false);
+            }
+        });
+        return true;
+    }
+
     public static boolean saveAll(boolean message) {
         if (!saveBlock.compareAndSet(false, true)) return false;
         Bukkit.getScheduler().runTaskAsynchronously(RyuZUInfiniteShop.getPlugin(), () -> {
@@ -146,6 +162,13 @@ public class FileUtil {
             Config.save();
             LanguageConfig.save();
             DisplayPanelConfig.save();
+        }
+    }
+
+    private static void saveDirtyData() {
+        synchronized (saveLock) {
+            TradeUtil.saveDirtyTradeOptions();
+            ShopUtil.saveDirtyShops();
         }
     }
 
