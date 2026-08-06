@@ -46,6 +46,10 @@ public class FileUtil {
     }
 
     public static boolean reloadAllWithMessage() {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), FileUtil::reloadAllWithMessage);
+            return true;
+        }
         if (!saveBlock.compareAndSet(false, true)) return false;
         try {
         ShopUtil.removeAllNPC();
@@ -78,6 +82,10 @@ public class FileUtil {
     }
 
     public static boolean loadAll() {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), FileUtil::loadAll);
+            return true;
+        }
         if (!saveBlock.compareAndSet(false, true)) return false;
         try {
         ShopUtil.removeAllNPC();

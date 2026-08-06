@@ -44,18 +44,23 @@ public class TradeUtil {
     }
 
     public static void removeGarbageTradeOption() {
-        Set<ShopTrade> trades = new HashSet<>();
+        Set<UUID> activeUUIDs = new HashSet<>();
         for (Shop shop : ShopUtil.getShops().values()) {
-            trades.addAll(shop.getTrades());
+            for (ShopTrade trade : shop.getTrades()) {
+                UUID uuid = ShopTrade.tradeUUID.get(trade);
+                if (uuid != null) {
+                    activeUUIDs.add(uuid);
+                }
+            }
         }
-        ShopTrade.tradeOptions.keySet().removeIf(tradeID -> !trades.contains(ShopTrade.tradeUUID.inverse().get(tradeID)));
+        ShopTrade.tradeOptions.keySet().removeIf(tradeID -> !activeUUIDs.contains(tradeID));
     }
 
     public static void saveTradeOptions() {
         removeGarbageTradeOption();
         File file = FileUtil.initializeFile("options.yml");
         YamlConfiguration config = new YamlConfiguration();
-        ShopTrade.tradeUUID.values().forEach(tradeID -> ShopTrade.tradeUUID.inverse().get(tradeID).saveTradeOption(config));
+        ShopTrade.tradeUUID.forEach((trade, tradeID) -> trade.saveTradeOption(config, tradeID));
         try {
             config.save(file);
         } catch (IOException e) {

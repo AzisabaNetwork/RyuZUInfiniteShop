@@ -23,7 +23,7 @@ repositories {
 }
 
 group = "com.github.ryuzu"
-version = "1.0.9+1.13"
+version = "1.1.0+1.13"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -44,7 +44,7 @@ java.targetCompatibility = JavaVersion.VERSION_11
 
 subprojects {
     plugins.withId("java") {
-        extensions.configure<org.gradle.api.plugins.JavaPluginExtension> {
+        extensions.configure<JavaPluginExtension> {
             sourceCompatibility = JavaVersion.VERSION_11
             targetCompatibility = JavaVersion.VERSION_11
         }

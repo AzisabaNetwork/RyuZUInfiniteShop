@@ -464,7 +464,7 @@ public class Shop {
             yaml.set("Npc.Options.Equipments", equipments.getObjects());
             yaml.set("Npc.Status.Lock", lock);
             yaml.set("Npc.Status.Searchable", searchable);
-            yaml.set("Trades", getTrades().stream().map(ShopTrade::serialize).collect(Collectors.toList()));
+            yaml.set("Trades", new ArrayList<>(getTrades()).stream().map(ShopTrade::serialize).collect(Collectors.toList()));
             yaml.set("Npc.Status.Yaw", location.getYaw());
         };
     }

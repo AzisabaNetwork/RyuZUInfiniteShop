@@ -196,7 +196,8 @@ public class ShopUtil {
     }
 
     public static void saveAllShops() {
-        for (Shop shop : getShops().values()) {
+        List<Shop> snapshot = new ArrayList<>(getShops().values());
+        for (Shop shop : snapshot) {
             try {
                 shop.saveYaml();
             } catch (Exception e) {
@@ -206,7 +207,8 @@ public class ShopUtil {
     }
 
     public static void saveDirtyShops() {
-        for (Shop shop : getShops().values()) {
+        List<Shop> snapshot = new ArrayList<>(getShops().values());
+        for (Shop shop : snapshot) {
             if (!shop.isDirty()) continue;
             try {
                 shop.saveYaml();
@@ -393,6 +395,10 @@ public class ShopUtil {
     }
 
     public static void reloadAllShopTradeInventory(Runnable runnable) {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> reloadAllShopTradeInventory(runnable));
+            return;
+        }
         HashMap<Player, ShopHolder> holders = new HashMap<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
             ShopHolder holder = closeShopTradeInventory(p);
