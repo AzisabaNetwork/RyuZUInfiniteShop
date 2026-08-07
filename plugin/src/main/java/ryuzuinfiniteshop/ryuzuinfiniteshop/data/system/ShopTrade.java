@@ -58,10 +58,11 @@ public class ShopTrade {
 
     public ConfigurationSection serialize() {
         ConfigurationSection config = new MemoryConfiguration();
-        config.set("give", giveData.getObjects());
-        config.set("take", takeData.getObjects());
-        if (tradeUUID.containsKey(this))
-            config.set("uuid", tradeUUID.get(this).toString());
+        config.set("give", giveData.reconvert().getObjects());
+        config.set("take", takeData.reconvert().getObjects());
+        UUID uuid = tradeUUID.get(this);
+        if (uuid != null)
+            config.set("uuid", uuid.toString());
         return config;
     }
 
@@ -90,38 +91,47 @@ public class ShopTrade {
     }
 
     public int getLimit() {
-        if (!tradeUUID.containsKey(this)) return 0;
-        return tradeOptions.getOrDefault(tradeUUID.get(this), new TradeOption()).getLimit();
+        UUID uuid = tradeUUID.get(this);
+        if (uuid == null) return 0;
+        TradeOption option = tradeOptions.get(uuid);
+        return option != null ? option.getLimit() : 0;
     }
 
     public TradeOption getOption() {
-        if (!tradeUUID.containsKey(this)) return new TradeOption();
-        return tradeOptions.getOrDefault(tradeUUID.get(this), new TradeOption());
+        UUID uuid = tradeUUID.get(this);
+        if (uuid == null) return new TradeOption();
+        return tradeOptions.getOrDefault(uuid, new TradeOption());
     }
 
     public Integer getTradeCount(Player player) {
         if (player == null) return 0;
-        int count = 0;
-        if (!tradeUUID.containsKey(this)) return 0;
-        return tradeCounts.contains(player.getUniqueId(), tradeUUID.get(this)) ? tradeCounts.get(player.getUniqueId(), tradeUUID.get(this)) : 0;
+        UUID uuid = tradeUUID.get(this);
+        if (uuid == null) return 0;
+        Integer count = tradeCounts.get(player.getUniqueId(), uuid);
+        return count != null ? count : 0;
     }
 
     public void addTradeCount(Player player) {
-        if (!tradeUUID.containsKey(this)) return;
+        UUID uuid = tradeUUID.get(this);
+        if (uuid == null) return;
         if (getOption().getLimit() == 0) return;
-        tradeCounts.put(player.getUniqueId(), tradeUUID.get(this), getTradeCount(player) + 1);
+        tradeCounts.put(player.getUniqueId(), uuid, getTradeCount(player) + 1);
         markOptionsDirty();
     }
 
     public void setTradeCount(Player player, int count) {
-        if (!tradeUUID.containsKey(this)) return;
+        UUID uuid = tradeUUID.get(this);
+        if (uuid == null) return;
         if (getOption().getLimit() == 0) return;
-        tradeCounts.put(player.getUniqueId(), tradeUUID.get(this), count);
+        tradeCounts.put(player.getUniqueId(), uuid, count);
         markOptionsDirty();
     }
 
     public void saveTradeOption() {
-        if (getOption().isNoData()) return;
+        UUID uuid = tradeUUID.get(this);
+        if (uuid == null) return;
+        TradeOption option = tradeOptions.get(uuid);
+        if (option == null || option.isNoData()) return;
         File file = FileUtil.initializeFile("options.yml");
         YamlConfiguration config = new YamlConfiguration();
         try {
@@ -129,7 +139,7 @@ public class ShopTrade {
         } catch (IOException | InvalidConfigurationException e) {
             throw new RuntimeException(e);
         }
-        saveTradeOption(config);
+        saveTradeOption(config, uuid);
 
         try {
             config.save(file);
@@ -139,10 +149,19 @@ public class ShopTrade {
     }
 
     public void saveTradeOption(YamlConfiguration config) {
-        if (getOption().isNoData()) return;
-        UUID tradeID = tradeUUID.get(this);
-        config.set(tradeID.toString() + ".options", getOption());
-        ShopTrade.tradeCounts.rowKeySet().forEach(playerID -> config.set(tradeID + ".counts." + playerID.toString(), ShopTrade.tradeCounts.get(playerID, tradeID)));
+        UUID uuid = tradeUUID.get(this);
+        if (uuid == null) return;
+        saveTradeOption(config, uuid);
+    }
+
+    public void saveTradeOption(YamlConfiguration config, UUID tradeID) {
+        TradeOption option = tradeOptions.get(tradeID);
+        if (option == null || option.isNoData()) return;
+        config.set(tradeID.toString() + ".options", option);
+        Map<UUID, Integer> counts = ShopTrade.tradeCounts.column(tradeID);
+        if (!counts.isEmpty()) {
+            counts.forEach((playerID, count) -> config.set(tradeID + ".counts." + playerID, count));
+        }
     }
 
     public static ItemStack getFilter() {

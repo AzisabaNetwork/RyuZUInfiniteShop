@@ -64,40 +64,76 @@ public class ShopUtil {
     // ========== File I/O ==========
 
     public static boolean loadAllShops() {
+        ShopLoadSession session = beginLoadAllShops();
+        while (session.hasNext()) session.loadNext();
+        return session.finish();
+    }
+
+    /** Starts loading shop files so callers can spread the work across ticks. */
+    public static ShopLoadSession beginLoadAllShops() {
         getShops().clear();
         File directory = FileUtil.initializeFolder("shops");
-        File[] ItemFiles = directory.listFiles();
-        if (ItemFiles == null) return false;
-        File saveYaml = null;
-        for (File f : ItemFiles) {
-            try {
-                if (!f.getName().endsWith(".yml")) continue;
-                if (f.getName().equals("save.yml")) {
-                    saveYaml = f;
-                    continue;
-                }
-                YamlConfiguration config = new YamlConfiguration();
-                try {
-                    config.load(f);
-                } catch (IOException | InvalidConfigurationException e) {
-                    e.printStackTrace();
-                }
-                Location location = LocationUtil.toLocationFromString(f.getName().replace(".yml", ""));
+        return new ShopLoadSession(directory.listFiles());
+    }
 
-                String type = config.getString("Npc.Options.EntityType", "VILLAGER");
-                String mythicmob = config.getString("Npc.Options.MythicMob");
-                String citizen = config.getString("Npc.Options.Citizen");
-                if (mythicmob != null)
-                    new Shop(location, mythicmob);
-                else if (citizen != null)
-                    new Shop(location, UUID.fromString(citizen), false);
-                else
-                    createNewShop(location, type, null);
-            } catch (Exception e) {
-                throw new RuntimeException(LanguageKey.ERROR_FILE_LOADING.getMessage(f.getName()), e);
+    public static final class ShopLoadSession {
+        private final List<File> shopFiles;
+        private final File legacySaveFile;
+        private int index;
+
+        private ShopLoadSession(File[] files) {
+            List<File> found = new ArrayList<>();
+            File legacy = null;
+            if (files != null) {
+                Arrays.sort(files, Comparator.comparing(File::getName));
+                for (File file : files) {
+                    if (!file.getName().endsWith(".yml")) continue;
+                    if (file.getName().equals("save.yml")) {
+                        legacy = file;
+                    } else {
+                        found.add(file);
+                    }
+                }
             }
+            this.shopFiles = found;
+            this.legacySaveFile = legacy;
         }
-        return saveYaml != null && convertAllShopkeepers(saveYaml);
+
+        public boolean hasNext() {
+            return index < shopFiles.size();
+        }
+
+        public void loadNext() {
+            if (hasNext()) loadShopFile(shopFiles.get(index++));
+        }
+
+        public boolean finish() {
+            return legacySaveFile != null && convertAllShopkeepers(legacySaveFile);
+        }
+    }
+
+    private static void loadShopFile(File file) {
+        try {
+            YamlConfiguration config = new YamlConfiguration();
+            try {
+                config.load(file);
+            } catch (IOException | InvalidConfigurationException e) {
+                e.printStackTrace();
+            }
+            Location location = LocationUtil.toLocationFromString(file.getName().replace(".yml", ""));
+
+            String type = config.getString("Npc.Options.EntityType", "VILLAGER");
+            String mythicmob = config.getString("Npc.Options.MythicMob");
+            String citizen = config.getString("Npc.Options.Citizen");
+            if (mythicmob != null)
+                new Shop(location, mythicmob);
+            else if (citizen != null)
+                new Shop(location, UUID.fromString(citizen), false);
+            else
+                createNewShop(location, type, null);
+        } catch (Exception e) {
+            throw new RuntimeException(LanguageKey.ERROR_FILE_LOADING.getMessage(file.getName()), e);
+        }
     }
 
     public static void saveAllShops() {

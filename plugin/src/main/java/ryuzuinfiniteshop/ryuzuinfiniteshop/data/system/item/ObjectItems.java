@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@EqualsAndHashCode
+@EqualsAndHashCode(doNotUseGetters = true)
 public class ObjectItems {
     private final List<Object> objects;
 
@@ -34,7 +34,7 @@ public class ObjectItems {
     }
 
     public List<Object> getObjects() {
-        return new ArrayList<>(reconvert().objects);
+        return new ArrayList<>(objects);
     }
 
     public ItemStack[] toItemStacks() {

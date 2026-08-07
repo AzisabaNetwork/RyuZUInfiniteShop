@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.*;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.holder.ShopHolder;
@@ -15,8 +16,11 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.TradeUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,6 +29,8 @@ public class FileUtil {
     @Getter
     private static final AtomicBoolean saveBlock = new AtomicBoolean(false);
     private static final Object saveLock = new Object();
+    private static final long RELOAD_TICK_BUDGET_NANOS = 8_000_000L;
+    private static final ThreadLocal<Boolean> internalReloadOperation = ThreadLocal.withInitial(() -> false);
     /**
      * YAML serialization and disk writes are blocking work. A dedicated Java 21
      * virtual thread keeps them out of both the server thread and Bukkit's shared
@@ -55,6 +61,10 @@ public class FileUtil {
     }
 
     public static boolean reloadAllWithMessage() {
+        if (!Bukkit.isPrimaryThread()) {
+            Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> reloadAllWithMessage());
+            return true;
+        }
         if (!saveBlock.compareAndSet(false, true)) return false;
         try {
             ShopUtil.removeAllNPC();
@@ -62,27 +72,125 @@ public class FileUtil {
             HashMap<Player, ShopHolder> viewer = ShopUtil.getAllShopInventoryViewer();
             Config.load();
             LanguageConfig.load();
-            TradeUtil.saveTradeOptions();
-            ShopUtil.saveAllShops();
-            UnderstandSystemConfig.save();
-            Config.save();
-            LanguageConfig.save();
-            DisplayPanelConfig.save();
-            DisplayPanelConfig.load();
-            boolean converted = ShopUtil.loadAllShops();
-            TradeUtil.loadTradeOptions();
-            Config.runAutoSave();
-            Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_COMPLETE.getMessage()));
-            ShopUtil.getShops().values().forEach(Shop::respawnNPC);
-            ShopUtil.openAllShopInventory(viewer);
-            if (converted) Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> saveAll());
+            new ReloadSession(viewer, new ArrayList<>(ShopUtil.getShops().values())).start();
             return true;
         } catch (Exception e) {
             RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to reload shop data: " + e.getMessage());
             e.printStackTrace();
-            return false;
-        } finally {
             saveBlock.set(false);
+            return false;
+        }
+    }
+
+    /** Spreads blocking reload work over ticks while keeping Bukkit access on the main thread. */
+    private static final class ReloadSession implements Runnable {
+        private enum Phase {
+            SAVE_OPTIONS, SAVE_SHOPS, SAVE_CONFIGS, PREPARE_LOAD,
+            LOAD_SHOPS, LOAD_OPTIONS, RESPAWN, COMPLETE
+        }
+
+        private final HashMap<Player, ShopHolder> viewers;
+        private final Iterator<Shop> shopsToSave;
+        private Iterator<Shop> shopsToRespawn;
+        private ShopUtil.ShopLoadSession shopLoader;
+        private BukkitTask task;
+        private Phase phase = Phase.SAVE_OPTIONS;
+        private boolean converted;
+        private final long startedAt = System.nanoTime();
+
+        private ReloadSession(HashMap<Player, ShopHolder> viewers, List<Shop> shops) {
+            this.viewers = viewers;
+            this.shopsToSave = shops.iterator();
+        }
+
+        private void start() {
+            task = Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), this, 1L, 1L);
+        }
+
+        @Override
+        public void run() {
+            long deadline = System.nanoTime() + RELOAD_TICK_BUDGET_NANOS;
+            try {
+                do {
+                    Phase stepPhase = phase;
+                    long stepStartedAt = System.nanoTime();
+                    processOneStep();
+                    long stepMillis = (System.nanoTime() - stepStartedAt) / 1_000_000L;
+                    if (stepMillis >= 50L) {
+                        RyuZUInfiniteShop.getPlugin().getLogger().warning(
+                                "SIS reload step " + stepPhase + " took " + stepMillis + " ms");
+                    }
+                } while (phase != Phase.COMPLETE && System.nanoTime() < deadline);
+
+                if (phase == Phase.COMPLETE) complete();
+            } catch (Exception e) {
+                fail(e);
+            }
+        }
+
+        private void processOneStep() {
+            switch (phase) {
+                case SAVE_OPTIONS -> {
+                    TradeUtil.saveTradeOptions();
+                    phase = Phase.SAVE_SHOPS;
+                }
+                case SAVE_SHOPS -> {
+                    if (shopsToSave.hasNext()) shopsToSave.next().saveYaml();
+                    else phase = Phase.SAVE_CONFIGS;
+                }
+                case SAVE_CONFIGS -> {
+                    UnderstandSystemConfig.save();
+                    Config.save();
+                    LanguageConfig.save();
+                    DisplayPanelConfig.save();
+                    DisplayPanelConfig.load();
+                    phase = Phase.PREPARE_LOAD;
+                }
+                case PREPARE_LOAD -> {
+                    shopLoader = ShopUtil.beginLoadAllShops();
+                    phase = Phase.LOAD_SHOPS;
+                }
+                case LOAD_SHOPS -> {
+                    if (shopLoader.hasNext()) shopLoader.loadNext();
+                    else {
+                        converted = shopLoader.finish();
+                        phase = Phase.LOAD_OPTIONS;
+                    }
+                }
+                case LOAD_OPTIONS -> {
+                    TradeUtil.loadTradeOptions();
+                    Config.runAutoSave();
+                    shopsToRespawn = new ArrayList<>(ShopUtil.getShops().values()).iterator();
+                    phase = Phase.RESPAWN;
+                }
+                case RESPAWN -> {
+                    if (shopsToRespawn.hasNext()) {
+                        runInternalReloadOperation(shopsToRespawn.next()::respawnNPC);
+                    } else {
+                        phase = Phase.COMPLETE;
+                    }
+                }
+                case COMPLETE -> { }
+            }
+        }
+
+        private void complete() {
+            task.cancel();
+            saveBlock.set(false);
+            Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_FILES_RELOADING_COMPLETE.getMessage()));
+            ShopUtil.openAllShopInventory(viewers);
+            long elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000L;
+            RyuZUInfiniteShop.getPlugin().getLogger().info(
+                    "SIS reload completed in " + elapsedMillis + " ms across multiple server ticks");
+            if (converted) Bukkit.getScheduler().runTask(RyuZUInfiniteShop.getPlugin(), () -> saveAll());
+        }
+
+        private void fail(Exception e) {
+            if (task != null) task.cancel();
+            saveBlock.set(false);
+            RyuZUInfiniteShop.getPlugin().getLogger().severe("Failed to reload shop data: " + e.getMessage());
+            e.printStackTrace();
+            ShopUtil.openAllShopInventory(viewers);
         }
     }
 
@@ -202,6 +310,15 @@ public class FileUtil {
     }
 
     public static boolean isSaveBlock() {
-        return saveBlock.get();
+        return saveBlock.get() && !internalReloadOperation.get();
+    }
+
+    private static void runInternalReloadOperation(Runnable operation) {
+        internalReloadOperation.set(true);
+        try {
+            operation.run();
+        } finally {
+            internalReloadOperation.remove();
+        }
     }
 }
