@@ -8,7 +8,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProv
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
 
-@EqualsAndHashCode
+@EqualsAndHashCode(doNotUseGetters = true)
 public class ObjectItem {
     private Object object;
 
@@ -21,7 +21,7 @@ public class ObjectItem {
     }
 
     public Object getObject() {
-        return reconvert().object;
+        return object;
     }
 
     public ItemStack toItemStack() {

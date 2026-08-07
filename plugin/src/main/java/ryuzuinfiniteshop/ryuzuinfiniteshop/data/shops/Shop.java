@@ -461,7 +461,7 @@ public class Shop {
             yaml.set("Npc.Options.EntityType", entityType);
             yaml.set("Npc.Options.Invisible", invisible);
             yaml.set("Shop.Options.ShopType", type.toString());
-            yaml.set("Npc.Options.Equipments", equipments.getObjects());
+            yaml.set("Npc.Options.Equipments", equipments.reconvert().getObjects());
             yaml.set("Npc.Status.Lock", lock);
             yaml.set("Npc.Status.Searchable", searchable);
             yaml.set("Trades", new ArrayList<>(getTrades()).stream().map(ShopTrade::serialize).collect(Collectors.toList()));

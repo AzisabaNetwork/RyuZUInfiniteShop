@@ -58,8 +58,8 @@ public class ShopTrade {
 
     public ConfigurationSection serialize() {
         ConfigurationSection config = new MemoryConfiguration();
-        config.set("give", giveData.getObjects());
-        config.set("take", takeData.getObjects());
+        config.set("give", giveData.reconvert().getObjects());
+        config.set("take", takeData.reconvert().getObjects());
         UUID uuid = tradeUUID.get(this);
         if (uuid != null)
             config.set("uuid", uuid.toString());
