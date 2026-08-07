@@ -44,6 +44,7 @@ public class TradeUtil {
     }
 
     public static void removeGarbageTradeOption() {
+        if (ShopTrade.tradeOptions.isEmpty()) return;
         Set<UUID> activeUUIDs = new HashSet<>();
         for (Shop shop : ShopUtil.getShops().values()) {
             for (ShopTrade trade : shop.getTrades()) {
@@ -57,9 +58,20 @@ public class TradeUtil {
     }
 
     public static void saveTradeOptions() {
-        removeGarbageTradeOption();
         File file = FileUtil.initializeFile("options.yml");
         YamlConfiguration config = new YamlConfiguration();
+        // Most installations do not use per-trade options. Avoid hashing and
+        // comparing every ItemStack-backed trade just to write an empty file.
+        if (ShopTrade.tradeOptions.isEmpty()) {
+            try {
+                config.save(file);
+            } catch (IOException e) {
+                if (!Config.readOnlyIgnoreIOException) e.printStackTrace();
+            }
+            return;
+        }
+
+        removeGarbageTradeOption();
         ShopTrade.tradeUUID.forEach((trade, tradeID) -> trade.saveTradeOption(config, tradeID));
         try {
             config.save(file);
