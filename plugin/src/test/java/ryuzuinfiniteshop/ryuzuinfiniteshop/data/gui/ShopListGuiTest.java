@@ -1,10 +1,13 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.ShopListGui;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
+
 import java.util.LinkedHashMap;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ShopListGuiTest {
 

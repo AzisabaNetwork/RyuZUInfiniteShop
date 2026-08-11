@@ -8,8 +8,8 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 

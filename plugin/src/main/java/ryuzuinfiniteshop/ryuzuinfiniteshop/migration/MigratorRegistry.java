@@ -11,6 +11,7 @@ public final class MigratorRegistry {
 
     static {
         register(new ProfessionKeyMigration());
+        register(new MythicMobsItemMigration());
         CURRENT_VERSION = STEPS.stream().mapToInt(MigrationStep::toVersion).max().orElse(0);
     }
 

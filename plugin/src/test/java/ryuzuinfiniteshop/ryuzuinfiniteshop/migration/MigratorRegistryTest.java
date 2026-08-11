@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class MigratorRegistryTest {
 
     @Test
-    void currentVersionIsOne() {
-        assertEquals(1, MigratorRegistry.CURRENT_VERSION);
+    void currentVersionIsTwo() {
+        assertEquals(2, MigratorRegistry.CURRENT_VERSION);
     }
 
     @Test
@@ -30,6 +30,14 @@ class MigratorRegistryTest {
         assertEquals(0, steps.get(0).fromVersion());
         assertEquals(1, steps.get(0).toVersion());
         assertInstanceOf(ProfessionKeyMigration.class, steps.get(0));
+    }
+
+    @Test
+    void secondStepIsMythicMobsItemMigration() {
+        List<MigrationStep> steps = MigratorRegistry.getSteps();
+        assertEquals(1, steps.get(1).fromVersion());
+        assertEquals(2, steps.get(1).toVersion());
+        assertInstanceOf(MythicMobsItemMigration.class, steps.get(1));
     }
 
     @Test

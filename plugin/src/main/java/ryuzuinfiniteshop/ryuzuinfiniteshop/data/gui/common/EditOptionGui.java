@@ -15,7 +15,6 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.ShopType;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.OptionType;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.TradeOption;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VaultHandler;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;

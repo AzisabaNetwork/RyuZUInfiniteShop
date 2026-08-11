@@ -1,9 +1,9 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops;
 
+import com.github.ryuzu.searchableinfiniteshop.api.IVillagerHandler;
 import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import com.github.ryuzu.searchableinfiniteshop.api.IVillagerHandler;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;

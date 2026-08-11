@@ -1,20 +1,17 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.listener.canceller;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.AbstractVillager;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Villager;
-import org.bukkit.entity.WanderingTrader;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.entity.CreeperPowerEvent;
+import org.bukkit.event.entity.EntityCombustEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.MerchantInventory;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.SpawnShopData;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.LocationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.entity.EntityUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;

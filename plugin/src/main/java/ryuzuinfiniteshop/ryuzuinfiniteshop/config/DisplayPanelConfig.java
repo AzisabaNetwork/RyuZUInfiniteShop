@@ -5,7 +5,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.DisplayPanel;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.FileUtil;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.XMaterial;
 
 import java.io.File;

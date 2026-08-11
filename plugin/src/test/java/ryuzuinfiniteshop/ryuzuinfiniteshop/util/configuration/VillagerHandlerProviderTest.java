@@ -1,7 +1,9 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration;
 
 import com.github.ryuzu.searchableinfiniteshop.api.IVillagerHandler;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 

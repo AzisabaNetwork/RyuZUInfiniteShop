@@ -3,7 +3,6 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration;
 import com.github.ryuzu.searchableinfiniteshop.api.IMythicHandler;
 import com.github.ryuzu.searchableinfiniteshop.v21newer.MythicHandlerV5_12_0;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;

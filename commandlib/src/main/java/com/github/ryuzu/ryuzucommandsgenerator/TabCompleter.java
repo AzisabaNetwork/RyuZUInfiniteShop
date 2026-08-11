@@ -3,9 +3,11 @@ package com.github.ryuzu.ryuzucommandsgenerator;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.HumanEntity;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class TabCompleter {

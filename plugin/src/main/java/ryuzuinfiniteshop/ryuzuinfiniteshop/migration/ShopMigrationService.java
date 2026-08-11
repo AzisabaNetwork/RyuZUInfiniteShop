@@ -5,7 +5,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -50,8 +49,13 @@ public final class ShopMigrationService {
                 for (MigrationStep step : MigratorRegistry.getStepsFrom(currentVersion)) {
                     if (step.fromVersion() >= currentVersion) {
                         step.migrate(yaml);
-                        currentVersion = step.toVersion();
-                        fileChanged = true;
+                        int migratedVersion = yaml.getInt("data-version", currentVersion);
+                        if (migratedVersion >= step.toVersion()) {
+                            currentVersion = migratedVersion;
+                            fileChanged = true;
+                        } else {
+                            break;
+                        }
                     }
                 }
 

@@ -2,14 +2,18 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration;
 
 import com.github.ryuzu.searchableinfiniteshop.api.IMythicHandler;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class MythicInstanceProviderTest {
 

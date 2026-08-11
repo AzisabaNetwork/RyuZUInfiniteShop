@@ -7,8 +7,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
-
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
+
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -20,7 +20,6 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.XMaterial;
 
 import java.util.HashMap;
-import java.util.List;
 
 //ショップエディターのメインページ
 @Getter

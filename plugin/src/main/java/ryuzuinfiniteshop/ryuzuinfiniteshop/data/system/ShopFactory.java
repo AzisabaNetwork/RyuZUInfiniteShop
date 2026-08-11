@@ -2,7 +2,9 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.data.system;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Ageable;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Slime;
 import org.bukkit.material.Colorable;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.*;
 

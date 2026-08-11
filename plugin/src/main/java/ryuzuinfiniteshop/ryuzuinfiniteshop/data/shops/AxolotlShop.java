@@ -4,7 +4,6 @@ import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Axolotl;
-import org.bukkit.entity.Cat;
 import org.bukkit.entity.Entity;
 
 import java.util.Arrays;
