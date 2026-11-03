@@ -23,6 +23,10 @@ public class TradeCompleteEvent extends Event {
         return handlers;
     }
 
+    public static HandlerList getHandlerList() {
+        return handlers;
+    }
+
     public ShopTrade getInstance() {
         return instance;
     }

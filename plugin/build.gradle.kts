@@ -6,7 +6,7 @@ plugins {
     id("java")
     id("java-library")
     id("maven-publish")
-    id("com.gradleup.shadow") version "9.4.1"
+    id("com.gradleup.shadow") version "9.6.1"
 }
 
 repositories {
