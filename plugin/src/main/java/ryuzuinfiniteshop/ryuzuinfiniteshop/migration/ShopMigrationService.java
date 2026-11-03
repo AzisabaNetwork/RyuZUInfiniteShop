@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -37,7 +38,9 @@ public final class ShopMigrationService {
         for (File file : files) {
             try {
                 YamlConfiguration yaml = new YamlConfiguration();
-                yaml.load(file);
+                String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+                // Legacy heads must be rewritten before Bukkit deserializes (and drops) their NBT.
+                yaml.loadFromString(needsSkullFix(text) ? LegacySkullMigration.fixRawYaml(text) : text);
                 int currentVersion = yaml.getInt("data-version", 0);
 
                 if (currentVersion >= MigratorRegistry.CURRENT_VERSION) {
@@ -88,6 +91,12 @@ public final class ShopMigrationService {
             sender.sendMessage(RyuZUInfiniteShop.prefixCommand + "§aMigration complete: " + migrated + " migrated, " + skipped + " skipped, " + failed + " failed.");
         }
         return new MigrationResult(migrated, skipped, failed);
+    }
+
+    private static boolean needsSkullFix(String text) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?m)^data-version:\\s*(\\d+)").matcher(text);
+        int version = m.find() ? Integer.parseInt(m.group(1)) : 0;
+        return version < LegacySkullMigration.TO_VERSION;
     }
 
     private static File createBackupDir(File shopsDir) {
