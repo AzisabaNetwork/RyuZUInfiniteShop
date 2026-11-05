@@ -1,13 +1,9 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.PropertyMap;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
@@ -64,19 +60,9 @@ public class ObjectItems {
         }
         if (object instanceof MythicItem && !Config.saveByMMID)
             return ((MythicItem) object).convertItemStack();
-        if (object instanceof ItemStack && ((ItemStack) object).hasItemMeta() && ((ItemStack) object).getItemMeta() instanceof SkullMeta) {
-            SkullMeta meta = (SkullMeta) ((ItemStack) object).getItemMeta();
-            if (meta.hasOwner()) return object;
-            GameProfile data = NBTUtil.getSkullData(meta);
-            if (data == null) return object;
-            PropertyMap map = data.getProperties();
-            GameProfile result = new GameProfile(data.getId(), JavaUtil.getOrDefault(data.getName(), ""));
-            result.getProperties().putAll(map);
-            NBTUtil.setSkullData(meta, result);
-            ((ItemStack) object).setItemMeta(meta);
-            return object;
-        } else
-            return object;
+        // Player heads are no longer rebuilt here: the legacy GameProfile hack breaks the profile of 1.21 heads.
+        // Heads saved by 1.15.2 are repaired once by LegacySkullMigration.
+        return object;
     }
 
     public ObjectItems reconvert() {

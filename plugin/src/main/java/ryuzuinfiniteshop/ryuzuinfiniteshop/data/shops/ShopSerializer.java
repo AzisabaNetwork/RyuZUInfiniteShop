@@ -47,6 +47,8 @@ public final class ShopSerializer {
         File file = getFile(shop);
         YamlConfiguration yaml = new YamlConfiguration();
         shop.getSaveYamlProcess().accept(yaml);
+        // Without this the file looks unmigrated again and every restart re-runs (and re-backs up) the migration.
+        yaml.set("data-version", ryuzuinfiniteshop.ryuzuinfiniteshop.migration.MigratorRegistry.CURRENT_VERSION);
         try {
             File parent = file.getParentFile();
             if (!parent.exists() && !parent.mkdirs())

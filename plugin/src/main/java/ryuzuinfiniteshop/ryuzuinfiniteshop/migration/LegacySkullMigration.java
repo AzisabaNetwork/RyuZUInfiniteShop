@@ -7,7 +7,9 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Restores player heads saved by 1.15.2 builds.
@@ -30,6 +33,7 @@ public final class LegacySkullMigration implements MigrationStep {
     public static final int TO_VERSION = 3;
 
     private static final String SKULL_OWNER = "SkullOwner";
+    private static final String SKULL_PROFILE = "SkullProfile";
 
     @Override
     public int fromVersion() {
@@ -93,16 +97,17 @@ public final class LegacySkullMigration implements MigrationStep {
         } catch (IOException | RuntimeException e) {
             return false;
         }
-        // Some 1.15.2 plugins (and Paper) stored the profile under "SkullProfile" instead of "SkullOwner".
-        Object ownerTag = nbt.get(SKULL_OWNER) != null ? nbt.get(SKULL_OWNER) : nbt.get("SkullProfile");
+        // 1.15.2 Paper stored the profile under "SkullProfile"; vanilla used "SkullOwner".
+        Object ownerTag = nbt.get(SKULL_OWNER) != null ? nbt.get(SKULL_OWNER) : nbt.get(SKULL_PROFILE);
         if (!(ownerTag instanceof Map<?, ?> owner)) return false;
 
         Map<String, Object> profile = new LinkedHashMap<>();
         profile.put("==", "PlayerProfile");
         Object id = owner.get("Id");
         UUID uuid = toUuid(id);
-        if (uuid != null) profile.put("uuid", uuid.toString());
-        if (owner.get("Name") instanceof String name) profile.put("name", name);
+        // CraftPlayerProfile.deserialize reads "uniqueId" (not "uuid")
+        if (uuid != null) profile.put("uniqueId", uuid.toString());
+        if (owner.get("Name") instanceof String name && !name.isBlank()) profile.put("name", name);
 
         List<Map<String, Object>> properties = new ArrayList<>();
         if (owner.get("Properties") instanceof Map<?, ?> props) {
@@ -119,10 +124,28 @@ public final class LegacySkullMigration implements MigrationStep {
             }
         }
         if (!properties.isEmpty()) profile.put("properties", properties);
-        if (!profile.containsKey("uuid") && !profile.containsKey("name") && properties.isEmpty()) return false;
+        if (!profile.containsKey("uniqueId") && !profile.containsKey("name")) {
+            if (properties.isEmpty()) return false;
+            // A profile needs a uuid or a name; derive a stable one from the texture
+            String texture = String.valueOf(properties.get(0).get("value"));
+            profile.put("uniqueId", UUID.nameUUIDFromBytes(texture.getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString());
+        }
 
         meta.put("skull-owner", profile);
-        if (nbt.size() == 1) meta.remove("internal");
+
+        // Paper parses a leftover SkullProfile/SkullOwner from "internal" with the current codec, which cannot read
+        // the 1.15.2 layout and yields an empty profile; that empty profile then wins over "skull-owner".
+        nbt.remove(SKULL_OWNER);
+        nbt.remove(SKULL_PROFILE);
+        if (nbt.isEmpty()) {
+            meta.remove("internal");
+        } else {
+            try {
+                meta.put("internal", Base64.getEncoder().encodeToString(writeNbt(nbt)));
+            } catch (IOException e) {
+                meta.remove("internal");
+            }
+        }
         return true;
     }
 
@@ -174,7 +197,7 @@ public final class LegacySkullMigration implements MigrationStep {
             case 9: {
                 byte elementType = in.readByte();
                 int size = in.readInt();
-                List<Object> list = new ArrayList<>();
+                NbtList list = new NbtList(elementType);
                 for (int i = 0; i < size; i++) list.add(readTag(in, elementType));
                 return list;
             }
@@ -190,6 +213,89 @@ public final class LegacySkullMigration implements MigrationStep {
                 return longs;
             }
             default: throw new IOException("unknown tag type " + type);
+        }
+    }
+
+    /** A list tag that remembers its element type, so it can be written back (even when empty). */
+    static final class NbtList extends ArrayList<Object> {
+        final byte elementType;
+
+        NbtList(byte elementType) {
+            this.elementType = elementType;
+        }
+    }
+
+    // ---- minimal NBT writer, the inverse of the reader ----
+
+    static byte[] writeNbt(Map<String, Object> root) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(bytes))) {
+            out.writeByte(10);
+            out.writeUTF("");
+            writeCompound(out, root);
+        }
+        return bytes.toByteArray();
+    }
+
+    private static void writeCompound(DataOutputStream out, Map<?, ?> compound) throws IOException {
+        for (Map.Entry<?, ?> entry : compound.entrySet()) {
+            out.writeByte(typeOf(entry.getValue()));
+            out.writeUTF(String.valueOf(entry.getKey()));
+            writeTag(out, entry.getValue());
+        }
+        out.writeByte(0);
+    }
+
+    private static byte typeOf(Object value) throws IOException {
+        if (value instanceof Byte) return 1;
+        if (value instanceof Short) return 2;
+        if (value instanceof Integer) return 3;
+        if (value instanceof Long) return 4;
+        if (value instanceof Float) return 5;
+        if (value instanceof Double) return 6;
+        if (value instanceof byte[]) return 7;
+        if (value instanceof String) return 8;
+        if (value instanceof List) return 9;
+        if (value instanceof Map) return 10;
+        if (value instanceof int[]) return 11;
+        if (value instanceof long[]) return 12;
+        throw new IOException("unsupported tag value " + value);
+    }
+
+    private static void writeTag(DataOutputStream out, Object value) throws IOException {
+        switch (typeOf(value)) {
+            case 1 -> out.writeByte((Byte) value);
+            case 2 -> out.writeShort((Short) value);
+            case 3 -> out.writeInt((Integer) value);
+            case 4 -> out.writeLong((Long) value);
+            case 5 -> out.writeFloat((Float) value);
+            case 6 -> out.writeDouble((Double) value);
+            case 7 -> {
+                byte[] bytes = (byte[]) value;
+                out.writeInt(bytes.length);
+                out.write(bytes);
+            }
+            case 8 -> out.writeUTF((String) value);
+            case 9 -> {
+                List<?> list = (List<?>) value;
+                byte elementType = value instanceof NbtList nbtList ? nbtList.elementType
+                        : list.isEmpty() ? 0 : typeOf(list.get(0));
+                out.writeByte(elementType);
+                out.writeInt(list.size());
+                for (Object element : list) writeTag(out, element);
+            }
+            case 10 -> writeCompound(out, (Map<?, ?>) value);
+            case 11 -> {
+                int[] ints = (int[]) value;
+                out.writeInt(ints.length);
+                for (int i : ints) out.writeInt(i);
+            }
+            case 12 -> {
+                long[] longs = (long[]) value;
+                out.writeInt(longs.length);
+                for (long l : longs) out.writeLong(l);
+            }
+            default -> throw new IOException("unsupported tag value " + value);
         }
     }
 }

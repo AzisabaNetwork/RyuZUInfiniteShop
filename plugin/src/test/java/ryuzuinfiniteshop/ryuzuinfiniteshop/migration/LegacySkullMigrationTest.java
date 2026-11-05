@@ -75,7 +75,7 @@ class LegacySkullMigrationTest {
 
         Map<?, ?> profile = (Map<?, ?>) meta.get("skull-owner");
         assertEquals("PlayerProfile", profile.get("=="));
-        assertEquals(UUID_STR, profile.get("uuid"));
+        assertEquals(UUID_STR, profile.get("uniqueId"));
         assertEquals("Steve", profile.get("name"));
         Map<?, ?> property = (Map<?, ?>) ((java.util.List<?>) profile.get("properties")).get(0);
         assertEquals("textures", property.get("name"));
@@ -84,9 +84,14 @@ class LegacySkullMigrationTest {
     }
 
     @Test
-    void keepsInternalWhenItHoldsOtherTags() throws Exception {
+    void keepsOtherInternalTagsButDropsLegacyProfile() throws Exception {
         String fixed = LegacySkullMigration.fixRawYaml(yamlWith(legacyInternal("Other")));
-        assertTrue(meta(fixed).containsKey("internal"));
+        Map<String, Object> meta = meta(fixed);
+        assertTrue(meta.containsKey("skull-owner"));
+        // The other tag stays, but the legacy profile must be gone or Paper turns it into an empty profile
+        Map<String, Object> nbt = LegacySkullMigration.readNbt(Base64.getDecoder().decode((String) meta.get("internal")));
+        assertEquals("x", nbt.get("Other"));
+        assertFalse(nbt.containsKey("SkullOwner"));
     }
 
     @Test
@@ -103,7 +108,7 @@ class LegacySkullMigrationTest {
         String fixed = LegacySkullMigration.fixRawYaml(yamlWith(REAL_INTERNAL));
         Map<?, ?> profile = (Map<?, ?>) meta(fixed).get("skull-owner");
         assertEquals("PlayerProfile", profile.get("=="));
-        assertNotNull(profile.get("uuid"));
+        assertNotNull(profile.get("uniqueId"));
         System.out.println("REAL PROFILE: " + profile);
         assertFalse(((java.util.List<?>) profile.get("properties")).isEmpty());
     }

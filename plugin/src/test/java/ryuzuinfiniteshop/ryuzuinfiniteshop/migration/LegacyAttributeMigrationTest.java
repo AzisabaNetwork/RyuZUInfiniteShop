@@ -74,4 +74,19 @@ class LegacyAttributeMigrationTest {
         String text = "data-version: 3\nname: shop\n";
         assertSame(text, LegacyAttributeMigration.fixRawYaml(text));
     }
+
+    @Test
+    void makesSharedUuidsUniquePerAttribute() {
+        // 1.15.2 items reuse one uuid for several modifiers of the same attribute
+        String mod = "      - ==: org.bukkit.attribute.AttributeModifier\n        uuid: " + UUID_STR
+                + "\n        name: a\n        operation: 1\n        amount: 0.1\n        slot: ";
+        String text = "data-version: 3\nitem:\n  meta:\n    attribute-modifiers:\n      GENERIC_MOVEMENT_SPEED:\n"
+                + mod + "HAND\n" + mod + "OFF_HAND\n";
+        Map<String, Object> root = new org.yaml.snakeyaml.Yaml().load(LegacyAttributeMigration.fixRawYaml(text));
+        Map<?, ?> meta = (Map<?, ?>) ((Map<?, ?>) root.get("item")).get("meta");
+        List<?> list = (List<?>) ((Map<?, ?>) meta.get("attribute-modifiers")).get("minecraft:movement_speed");
+        assertNotEquals(((Map<?, ?>) list.get(0)).get("key"), ((Map<?, ?>) list.get(1)).get("key"));
+        assertEquals("mainhand", ((Map<?, ?>) list.get(0)).get("slot"));
+        assertEquals("offhand", ((Map<?, ?>) list.get(1)).get("slot"));
+    }
 }

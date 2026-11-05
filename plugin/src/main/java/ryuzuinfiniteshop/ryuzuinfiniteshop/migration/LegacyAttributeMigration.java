@@ -99,6 +99,7 @@ public final class LegacyAttributeMigration implements MigrationStep {
                 for (Object value : values) {
                     if (value instanceof Map<?, ?> mod) {
                         changed |= convertModifier((Map<Object, Object>) mod);
+                        changed |= makeKeyUnique((Map<Object, Object>) mod, list);
                     }
                     list.add(value);
                 }
@@ -106,6 +107,29 @@ public final class LegacyAttributeMigration implements MigrationStep {
         }
         if (changed) meta.put(ATTRIBUTE_MODIFIERS, converted);
         return changed;
+    }
+
+    /**
+     * 1.15.2 let several modifiers of one attribute share a uuid (e.g. one per slot or operation). The current game
+     * requires the key to be unique per attribute and refuses the duplicate, so later ones get a numeric suffix.
+     */
+    private static boolean makeKeyUnique(Map<Object, Object> modifier, List<Object> existing) {
+        Object key = modifier.get("key");
+        if (key == null) return false;
+        String base = String.valueOf(key);
+        String candidate = base;
+        int n = 1;
+        while (containsKey(existing, candidate)) candidate = base + "_" + (++n);
+        if (candidate.equals(base)) return false;
+        modifier.put("key", candidate);
+        return true;
+    }
+
+    private static boolean containsKey(List<Object> modifiers, String key) {
+        for (Object other : modifiers) {
+            if (other instanceof Map<?, ?> m && key.equals(String.valueOf(m.get("key")))) return true;
+        }
+        return false;
     }
 
     private static boolean convertModifier(Map<Object, Object> modifier) {
