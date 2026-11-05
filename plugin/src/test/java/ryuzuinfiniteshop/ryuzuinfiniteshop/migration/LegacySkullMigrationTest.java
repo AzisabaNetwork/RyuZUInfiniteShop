@@ -94,4 +94,17 @@ class LegacySkullMigrationTest {
         String text = "data-version: 2\nname: shop\n";
         assertSame(text, LegacySkullMigration.fixRawYaml(text));
     }
+
+    // Real item from a 1.15.2 shop: the profile sits under "SkullProfile", not "SkullOwner".
+    private static final String REAL_INTERNAL = "H4sIAAAAAAAA/02KT2+CMBxAf1uyxJF9jF1JSvmjHHYwsmiJ7SYCSm+ARaitMwhu+Ln2Acdxt/fyngFgwMv21Cv12X5VjRIGGCNdRNs14voMk078dH0rrgYAPEzgKc1VL+BXDCHi+xod9qEqB+KNHm+R+iDyMiXndCgWxCN67Ku5tx78f6/b5TtXZXZY8/OmL3SK1nakxCqySp3caBzWdJk4LC4Hdk/ufJd8c/1+p8HRovHczWKCWaAaKgmiwQbxJW+YzDDD0YkGaZPpSLPgaHPJZSZTPX6YLUK/2qM3gAk8kgO85ofCKb3CMv0Kz0zh5pZZOXZpYhshz3ZmCPtTgD8pcErFHAEAAA==";
+
+    @Test
+    void convertsRealSkullProfileTag() {
+        String fixed = LegacySkullMigration.fixRawYaml(yamlWith(REAL_INTERNAL));
+        Map<?, ?> profile = (Map<?, ?>) meta(fixed).get("skull-owner");
+        assertEquals("PlayerProfile", profile.get("=="));
+        assertNotNull(profile.get("uuid"));
+        System.out.println("REAL PROFILE: " + profile);
+        assertFalse(((java.util.List<?>) profile.get("properties")).isEmpty());
+    }
 }
