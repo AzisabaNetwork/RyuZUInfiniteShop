@@ -93,7 +93,9 @@ public final class LegacySkullMigration implements MigrationStep {
         } catch (IOException | RuntimeException e) {
             return false;
         }
-        if (!(nbt.get(SKULL_OWNER) instanceof Map<?, ?> owner)) return false;
+        // Some 1.15.2 plugins (and Paper) stored the profile under "SkullProfile" instead of "SkullOwner".
+        Object ownerTag = nbt.get(SKULL_OWNER) != null ? nbt.get(SKULL_OWNER) : nbt.get("SkullProfile");
+        if (!(ownerTag instanceof Map<?, ?> owner)) return false;
 
         Map<String, Object> profile = new LinkedHashMap<>();
         profile.put("==", "PlayerProfile");
@@ -137,7 +139,7 @@ public final class LegacySkullMigration implements MigrationStep {
 
     // ---- minimal NBT reader (gzip, big endian) ----
 
-    private static Map<String, Object> readNbt(byte[] data) throws IOException {
+    static Map<String, Object> readNbt(byte[] data) throws IOException {
         try (DataInputStream in = new DataInputStream(new GZIPInputStream(new ByteArrayInputStream(data)))) {
             if (in.readByte() != 10) throw new IOException("root is not a compound");
             in.readUTF();

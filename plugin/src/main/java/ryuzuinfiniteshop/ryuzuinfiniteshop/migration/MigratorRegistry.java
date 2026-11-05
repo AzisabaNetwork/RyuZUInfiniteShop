@@ -13,6 +13,8 @@ public final class MigratorRegistry {
         register(new ProfessionKeyMigration());
         register(new MythicMobsItemMigration());
         register(new LegacySkullMigration());
+        register(new LegacyAttributeMigration());
+        register(new LegacyMythicTypeMigration());
         CURRENT_VERSION = STEPS.stream().mapToInt(MigrationStep::toVersion).max().orElse(0);
     }
 

@@ -39,8 +39,12 @@ public final class ShopMigrationService {
             try {
                 YamlConfiguration yaml = new YamlConfiguration();
                 String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-                // Legacy heads must be rewritten before Bukkit deserializes (and drops) their NBT.
-                yaml.loadFromString(needsSkullFix(text) ? LegacySkullMigration.fixRawYaml(text) : text);
+                // Legacy heads/attributes must be rewritten before Bukkit deserializes (and drops) them.
+                int rawVersion = rawDataVersion(text);
+                if (rawVersion < LegacyMythicTypeMigration.TO_VERSION) text = LegacyMythicTypeMigration.fixRawYaml(text);
+                if (rawVersion < LegacySkullMigration.TO_VERSION) text = LegacySkullMigration.fixRawYaml(text);
+                if (rawVersion < LegacyAttributeMigration.TO_VERSION) text = LegacyAttributeMigration.fixRawYaml(text);
+                yaml.loadFromString(text);
                 int currentVersion = yaml.getInt("data-version", 0);
 
                 if (currentVersion >= MigratorRegistry.CURRENT_VERSION) {
@@ -93,10 +97,9 @@ public final class ShopMigrationService {
         return new MigrationResult(migrated, skipped, failed);
     }
 
-    private static boolean needsSkullFix(String text) {
+    private static int rawDataVersion(String text) {
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?m)^data-version:\\s*(\\d+)").matcher(text);
-        int version = m.find() ? Integer.parseInt(m.group(1)) : 0;
-        return version < LegacySkullMigration.TO_VERSION;
+        return m.find() ? Integer.parseInt(m.group(1)) : 0;
     }
 
     private static File createBackupDir(File shopsDir) {
