@@ -1,6 +1,10 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.migration;
 
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.profile.PlayerProfile;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
 
 import java.util.ArrayList;
@@ -31,7 +35,7 @@ public final class MythicMobsItemMigration implements MigrationStep {
 
         boolean changed = false;
         for (String key : yaml.getKeys(false)) {
-            Conversion conversion = convert(yaml.get(key), this::regenerate);
+            Conversion conversion = convert(yaml.get(key), item -> regenerateSafely(item, this::regenerate));
             if (conversion.changed()) {
                 yaml.set(key, conversion.value());
                 changed = true;
@@ -73,11 +77,55 @@ public final class MythicMobsItemMigration implements MigrationStep {
     private ItemStack regenerate(ItemStack item) {
         String id = MythicInstanceProvider.getInstance().getID(item);
         if (id == null || id.isBlank()) return null;
-        return MythicInstanceProvider.getInstance().getMythicItem(id, item.getAmount());
+        try {
+            return MythicInstanceProvider.getInstance().getMythicItem(id, item.getAmount());
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("MythicMobs item '" + id + "': " + e.getMessage(), e);
+        }
     }
 
     static Object regenerateSavedItems(Object value, Function<ItemStack, ItemStack> regenerator) {
-        return convert(value, regenerator).value();
+        return convert(value, item -> regenerateSafely(item, regenerator)).value();
+    }
+
+    /**
+     * Regenerates one item without letting a broken MythicMobs item config hurt the rest of the file:
+     * <ul>
+     *     <li>an exception (e.g. "Unknown attribute") keeps the saved item instead of failing the whole file;</li>
+     *     <li>a player head whose config texture MythicMobs cannot apply (e.g. invalid base64) keeps the saved
+     *     profile instead of turning into a blank head.</li>
+     * </ul>
+     */
+    static ItemStack regenerateSafely(ItemStack item, Function<ItemStack, ItemStack> regenerator) {
+        ItemStack updated;
+        try {
+            updated = regenerator.apply(item);
+        } catch (RuntimeException e) {
+            warn("Could not regenerate MythicMobs item, keeping the saved one: " + e);
+            return null;
+        }
+        if (updated == null) return null;
+        keepSavedSkullProfile(item, updated);
+        return updated;
+    }
+
+    private static void keepSavedSkullProfile(ItemStack saved, ItemStack updated) {
+        if (!saved.hasItemMeta() || !(saved.getItemMeta() instanceof SkullMeta savedMeta)) return;
+        ItemMeta meta = updated.getItemMeta();
+        if (!(meta instanceof SkullMeta updatedMeta)) return;
+        PlayerProfile savedProfile = savedMeta.getOwnerProfile();
+        if (!hasTextures(savedProfile) || hasTextures(updatedMeta.getOwnerProfile())) return;
+        updatedMeta.setOwnerProfile(savedProfile);
+        updated.setItemMeta(updatedMeta);
+    }
+
+    private static boolean hasTextures(PlayerProfile profile) {
+        return profile != null && !profile.getTextures().isEmpty();
+    }
+
+    private static void warn(String message) {
+        RyuZUInfiniteShop plugin = RyuZUInfiniteShop.getPlugin();
+        if (plugin != null && plugin.getLogger() != null) plugin.getLogger().warning(message);
     }
 
     private record Conversion(Object value, boolean changed) {}
