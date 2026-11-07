@@ -31,7 +31,7 @@ public final class ShopNPCManager {
             npc.remove();
         }
         Location middleLoc = LocationUtil.getMiddleLocation(shop.location);
-        if (shop.location.getWorld() != null) {
+        if (shop.location.isWorldLoaded()) {
             shop.location.getWorld().getNearbyEntities(middleLoc, 0.5, 0.5, 0.5).stream()
                     .filter(entity -> NBTUtil.getNMSStringTag(entity, "Shop") != null)
                     .forEach(Entity::remove);
@@ -49,6 +49,7 @@ public final class ShopNPCManager {
         if (shop.npcType != NpcType.MYTHICMOB && shop.entityType == null
                 && JavaUtil.isEmptyString(shop.displayName)) return;
         if (FileUtil.isSaveBlock()) return;
+        if (!shop.location.isWorldLoaded()) return;
 
         Entity npc = getEntity(shop);
         if (npc != null && npc.isValid()) return;

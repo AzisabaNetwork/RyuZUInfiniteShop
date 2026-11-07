@@ -50,6 +50,8 @@ public class TradeUtil {
                 if (uuid != null) activeUUIDs.add(uuid);
             }
         }
+        // Shops in unloaded worlds are not in the registry, but their options are still in use.
+        activeUUIDs.addAll(ShopUtil.getDeferredTradeUUIDs());
         ShopTrade.tradeOptions.keySet().removeIf(tradeID -> !activeUUIDs.contains(tradeID));
     }
 
@@ -67,6 +69,9 @@ public class TradeUtil {
 
         removeGarbageTradeOption();
         ShopTrade.tradeUUID.forEach((trade, tradeID) -> trade.saveTradeOption(config, tradeID));
+        for (UUID tradeID : ShopUtil.getDeferredTradeUUIDs()) {
+            if (!config.contains(tradeID.toString())) ShopTrade.writeTradeOption(config, tradeID);
+        }
         try {
             config.save(file);
         } catch (IOException e) {

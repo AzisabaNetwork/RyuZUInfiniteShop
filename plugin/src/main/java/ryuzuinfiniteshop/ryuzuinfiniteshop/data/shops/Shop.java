@@ -283,6 +283,13 @@ public class Shop {
         ShopUtil.removeShop(getID());
     }
 
+    /** Removes the NPC and hologram without deleting the shop data (used when its world unloads). */
+    public void removeEntities() {
+        removeNPC();
+        if (hologram != null) hologram.remove();
+        hologram = null;
+    }
+
     public void removeShop(Player p) {
         LogUtil.log(LogUtil.LogType.REMOVESHOP, p.getName(), getID());
         removeShop();

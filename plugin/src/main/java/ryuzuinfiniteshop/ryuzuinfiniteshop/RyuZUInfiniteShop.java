@@ -83,6 +83,7 @@ public final class RyuZUInfiniteShop extends JavaPlugin {
         getPlugin().getServer().getPluginManager().registerEvents(new SearchTradeListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new TeleportShopListener(), getPlugin());
         getPlugin().getServer().getPluginManager().registerEvents(new SchedulerListener(), getPlugin());
+        getPlugin().getServer().getPluginManager().registerEvents(new WorldLoadShopListener(), getPlugin());
     }
 
 

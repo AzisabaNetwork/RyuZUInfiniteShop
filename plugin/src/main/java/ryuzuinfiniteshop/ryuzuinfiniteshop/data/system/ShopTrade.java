@@ -155,6 +155,11 @@ public class ShopTrade {
     }
 
     public void saveTradeOption(YamlConfiguration config, UUID tradeID) {
+        writeTradeOption(config, tradeID);
+    }
+
+    /** Writes the option and trade counts stored for the given trade ID into the config. */
+    public static void writeTradeOption(YamlConfiguration config, UUID tradeID) {
         TradeOption option = tradeOptions.get(tradeID);
         if (option == null || option.isNoData()) return;
         config.set(tradeID.toString() + ".options", option);

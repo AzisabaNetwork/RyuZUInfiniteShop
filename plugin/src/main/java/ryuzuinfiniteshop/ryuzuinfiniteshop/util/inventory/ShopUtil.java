@@ -78,6 +78,7 @@ public class ShopUtil {
     /** Starts loading shop files so callers can spread the work across ticks. */
     public static ShopLoadSession beginLoadAllShops() {
         getShops().clear();
+        deferredShops.clear();
         File directory = FileUtil.initializeFolder("shops");
         return new ShopLoadSession(directory.listFiles());
     }
@@ -114,11 +115,25 @@ public class ShopUtil {
         }
 
         public boolean finish() {
+            logDeferredShops();
             return legacySaveFile != null && convertAllShopkeepers(legacySaveFile);
         }
     }
 
-    private static void loadShopFile(File file) {
+    /**
+     * Loads one shop file. Files whose world is not loaded yet are deferred
+     * until {@link #loadDeferredShops(String)} is called for that world, and a
+     * broken file is logged and skipped so it cannot abort loading the rest.
+     *
+     * @return the loaded shop, or null when the file was deferred or failed
+     */
+    private static Shop loadShopFile(File file) {
+        String id = file.getName().replace(".yml", "");
+        String worldName = id.split(",", 2)[0];
+        if (Bukkit.getWorld(worldName) == null) {
+            deferShopFile(worldName, file, readTradeUUIDs(file));
+            return null;
+        }
         try {
             YamlConfiguration config = new YamlConfiguration();
             try {
@@ -126,20 +141,131 @@ public class ShopUtil {
             } catch (IOException | InvalidConfigurationException e) {
                 e.printStackTrace();
             }
-            Location location = LocationUtil.toLocationFromString(file.getName().replace(".yml", ""));
+            Location location = LocationUtil.toLocationFromString(id);
 
             String type = config.getString("Npc.Options.EntityType", "VILLAGER");
             String mythicmob = config.getString("Npc.Options.MythicMob");
             String citizen = config.getString("Npc.Options.Citizen");
             if (mythicmob != null)
-                new Shop(location, mythicmob);
+                return new Shop(location, mythicmob);
             else if (citizen != null)
-                new Shop(location, UUID.fromString(citizen), false);
+                return new Shop(location, UUID.fromString(citizen), false);
             else
-                createNewShop(location, type, null);
+                return createNewShop(location, type, null);
         } catch (Exception e) {
-            throw new RuntimeException(LanguageKey.ERROR_FILE_LOADING.getMessage(file.getName()), e);
+            logSevere(LanguageKey.ERROR_FILE_LOADING.getMessage(file.getName()), e);
+            return null;
         }
+    }
+
+    // ========== Shops in worlds that are not loaded ==========
+
+    /** Shop files waiting for their world to load, keyed by lower-cased world name. */
+    private static final Map<String, List<DeferredShop>> deferredShops = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private record DeferredShop(File file, Set<UUID> tradeUUIDs) {}
+
+    private static String worldKey(String worldName) {
+        return worldName.toLowerCase(Locale.ROOT);
+    }
+
+    private static void deferShopFile(String worldName, File file, Set<UUID> tradeUUIDs) {
+        deferredShops.computeIfAbsent(worldKey(worldName), key -> new java.util.concurrent.CopyOnWriteArrayList<>())
+                .add(new DeferredShop(file, tradeUUIDs));
+    }
+
+    private static Set<UUID> readTradeUUIDs(File file) {
+        Set<UUID> uuids = new HashSet<>();
+        try {
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+            for (Map<?, ?> trade : config.getMapList("Trades")) {
+                Object uuid = trade.get("uuid");
+                if (uuid == null) continue;
+                try {
+                    uuids.add(UUID.fromString(uuid.toString()));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+        } catch (Exception e) {
+            logSevere("Failed to read trade IDs from deferred shop file " + file.getName(), e);
+        }
+        return uuids;
+    }
+
+    private static void logDeferredShops() {
+        deferredShops.forEach((world, shops) -> logWarning("World '" + world + "' is not loaded; "
+                + shops.size() + " shop(s) will be loaded when the world loads."));
+    }
+
+    /** Returns the number of shops waiting for a world to load. */
+    public static int getDeferredShopCount() {
+        return deferredShops.values().stream().mapToInt(List::size).sum();
+    }
+
+    /**
+     * Trade IDs referenced by shops whose world is not loaded. Their trade
+     * options must survive saves even though the shops are not in the registry.
+     */
+    public static Set<UUID> getDeferredTradeUUIDs() {
+        Set<UUID> uuids = new HashSet<>();
+        for (List<DeferredShop> shops : deferredShops.values())
+            for (DeferredShop shop : shops) uuids.addAll(shop.tradeUUIDs());
+        return uuids;
+    }
+
+    /** Loads the shops that were waiting for the given world. Must run on the main thread. */
+    public static List<Shop> loadDeferredShops(String worldName) {
+        List<DeferredShop> pending = deferredShops.get(worldKey(worldName));
+        if (pending == null) return Collections.emptyList();
+        List<Shop> loaded = new ArrayList<>();
+        for (DeferredShop deferred : pending) {
+            Shop shop = loadShopFile(deferred.file());
+            if (shop != null) loaded.add(shop);
+        }
+        // Remove only after loading so a concurrent save never loses the trade IDs.
+        deferredShops.remove(worldKey(worldName), pending);
+        logInfo("Loaded " + loaded.size() + " shop(s) in world '" + worldName + "'.");
+        return loaded;
+    }
+
+    /**
+     * Takes the shops of a world that is about to unload out of the registry,
+     * keeping them deferred so they come back when the world loads again.
+     */
+    public static void unloadShops(String worldName) {
+        List<Shop> unloading = getShops().values().stream()
+                .filter(shop -> shop.getLocation().isWorldLoaded()
+                        && shop.getLocation().getWorld().getName().equalsIgnoreCase(worldName))
+                .collect(Collectors.toList());
+        for (Shop shop : unloading) {
+            File file = FileUtil.initializeFile("shops/" + shop.getID() + ".yml");
+            Set<UUID> tradeUUIDs = shop.getTrades().stream()
+                    .map(ShopTrade.tradeUUID::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            if (shop.isDirty()) shop.saveYaml();
+            deferShopFile(worldName, file, tradeUUIDs);
+            shop.removeEntities();
+            removeShop(shop.getID());
+        }
+    }
+
+    private static java.util.logging.Logger logger() {
+        RyuZUInfiniteShop plugin = RyuZUInfiniteShop.getPlugin();
+        java.util.logging.Logger logger = plugin == null ? null : plugin.getLogger();
+        return logger != null ? logger : Bukkit.getLogger();
+    }
+
+    private static void logInfo(String message) {
+        logger().info(message);
+    }
+
+    private static void logWarning(String message) {
+        logger().warning(message);
+    }
+
+    private static void logSevere(String message, Exception e) {
+        logger().log(java.util.logging.Level.SEVERE, message, e);
     }
 
     public static void saveAllShops() {

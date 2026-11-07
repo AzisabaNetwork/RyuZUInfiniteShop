@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Shops in worlds loaded after the plugin (e.g. by Multiverse) never appeared** — such shop files are now deferred and loaded on `WorldLoadEvent` (and set aside again on `WorldUnloadEvent`) instead of aborting the whole load; one broken shop file no longer stops the rest from loading; trade options of deferred shops are kept in `options.yml`; the periodic NPC respawn skips shops whose world is not loaded
 - **Typo: `exsistsMythicMob` → `existsMythicMob`** — API (`IMythicHandler`), implementation (`MythicHandlerV5_12_0`), and all callers
 - **Typo: `exsited` → `existed`** in `Shop.java`
 - **Typo: `changeNPCDirecation` → `changeNPCDirection`** in `Shop.java` and listener class

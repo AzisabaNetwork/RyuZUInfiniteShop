@@ -75,6 +75,16 @@ public class Config {
         if (autoSaveTask != null) autoSaveTask.cancel();
         if (respawnTask != null) respawnTask.cancel();
         if (autoSaveInterval > 0) autoSaveTask = Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), () -> FileUtil.saveDirty(), 20L * 60 * autoSaveInterval, 20L * 60 * autoSaveInterval);
-        respawnTask = Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), () -> ShopUtil.getShops().values().forEach(Shop::respawnNPC), 20L, 20L * 10);
+        respawnTask = Bukkit.getScheduler().runTaskTimer(RyuZUInfiniteShop.getPlugin(), () -> {
+            // One broken shop must not stop the remaining shops from respawning.
+            for (Shop shop : new java.util.ArrayList<>(ShopUtil.getShops().values())) {
+                try {
+                    shop.respawnNPC();
+                } catch (Exception e) {
+                    RyuZUInfiniteShop.getPlugin().getLogger().log(java.util.logging.Level.WARNING,
+                            "Failed to respawn shop NPC: " + shop.getLocation(), e);
+                }
+            }
+        }, 20L, 20L * 10);
     }
 }
