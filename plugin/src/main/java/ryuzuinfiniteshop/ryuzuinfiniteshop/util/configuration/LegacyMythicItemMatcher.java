@@ -164,7 +164,7 @@ public final class LegacyMythicItemMatcher {
                 + " ambiguous, " + missingCurrent + " IDs missing in current MythicMobs";
     }
 
-    static String readableText(String value) {
+    public static String readableText(String value) {
         if (value == null) return null;
         String trimmed = value.trim();
         if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return value;

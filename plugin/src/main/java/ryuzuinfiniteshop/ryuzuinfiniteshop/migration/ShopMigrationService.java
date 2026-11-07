@@ -53,6 +53,12 @@ public final class ShopMigrationService {
                     continue;
                 }
 
+                if (currentVersion < LegacyBackupMythicIdMigration.TO_VERSION) {
+                    int restored = LegacyBackupMythicIdMigration.restore(yaml, shopsDir, file.getName());
+                    if (restored > 0 && RyuZUInfiniteShop.getPlugin() != null)
+                        RyuZUInfiniteShop.getPlugin().getLogger().info("Restored " + restored + " MythicMobs IDs of " + file.getName() + " from its 1.15.2 backup");
+                }
+
                 boolean fileChanged = false;
                 for (MigrationStep step : MigratorRegistry.getStepsFrom(currentVersion)) {
                     if (step.fromVersion() >= currentVersion) {

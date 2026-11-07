@@ -15,6 +15,7 @@ public final class MigratorRegistry {
         register(new LegacySkullMigration());
         register(new LegacyAttributeMigration());
         register(new LegacyMythicTypeMigration());
+        register(new LegacyBackupMythicIdMigration());
         CURRENT_VERSION = STEPS.stream().mapToInt(MigrationStep::toVersion).max().orElse(0);
     }
 
