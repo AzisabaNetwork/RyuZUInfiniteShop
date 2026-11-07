@@ -68,6 +68,11 @@ public final class LegacyBackupMythicIdMigration implements MigrationStep {
 
     /** The oldest backup of the file that is still in the 1.15.2 format, parsed without Bukkit. */
     static Object findLegacyBackup(File shopsDir, String fileName) {
+        return findLegacyBackup(shopsDir, fileName, "internal:");
+    }
+
+    /** The oldest backup of the file whose text contains {@code marker}, parsed without Bukkit. */
+    static Object findLegacyBackup(File shopsDir, String fileName, String marker) {
         File[] dirs = new File(shopsDir, "backup").listFiles(File::isDirectory);
         if (dirs == null) return null;
         Arrays.sort(dirs, Comparator.comparing(File::getName));
@@ -76,7 +81,7 @@ public final class LegacyBackupMythicIdMigration implements MigrationStep {
             if (!backup.isFile()) continue;
             try {
                 String text = Files.readString(backup.toPath(), StandardCharsets.UTF_8);
-                if (!text.contains("internal:")) continue;
+                if (!text.contains(marker)) continue;
                 return new Yaml(new SafeConstructor(new LoaderOptions())).load(text);
             } catch (IOException | RuntimeException ignored) {
                 // try the next backup

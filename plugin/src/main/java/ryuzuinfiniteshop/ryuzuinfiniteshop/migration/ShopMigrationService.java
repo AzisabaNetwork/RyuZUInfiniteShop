@@ -45,6 +45,7 @@ public final class ShopMigrationService {
                 if (rawVersion < LegacyMythicTypeMigration.TO_VERSION) text = LegacyMythicTypeMigration.fixRawYaml(text);
                 if (rawVersion < LegacySkullMigration.TO_VERSION) text = LegacySkullMigration.fixRawYaml(text);
                 if (rawVersion < LegacyAttributeMigration.TO_VERSION) text = LegacyAttributeMigration.fixRawYaml(text);
+                if (rawVersion < LegacyLeatherColorMigration.TO_VERSION) text = LegacyLeatherColorMigration.fixRawYaml(text);
                 yaml.loadFromString(text);
                 int currentVersion = yaml.getInt("data-version", 0);
 
@@ -57,6 +58,12 @@ public final class ShopMigrationService {
                     int restored = LegacyBackupMythicIdMigration.restore(yaml, shopsDir, file.getName());
                     if (restored > 0 && RyuZUInfiniteShop.getPlugin() != null)
                         RyuZUInfiniteShop.getPlugin().getLogger().info("Restored " + restored + " MythicMobs IDs of " + file.getName() + " from its 1.15.2 backup");
+                }
+
+                if (currentVersion < LegacyLeatherColorMigration.TO_VERSION) {
+                    int restored = LegacyLeatherColorMigration.restore(yaml, shopsDir, file.getName());
+                    if (restored > 0 && RyuZUInfiniteShop.getPlugin() != null)
+                        RyuZUInfiniteShop.getPlugin().getLogger().info("Restored the color of " + restored + " leather armor items of " + file.getName() + " from its 1.15.2 backup");
                 }
 
                 boolean fileChanged = false;
