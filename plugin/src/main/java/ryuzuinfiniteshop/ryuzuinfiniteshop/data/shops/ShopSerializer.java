@@ -15,6 +15,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.ObjectItems;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.CitizensHandler;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.DiffBackupUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
 
 import java.io.File;
@@ -50,10 +51,7 @@ public final class ShopSerializer {
         // Without this the file looks unmigrated again and every restart re-runs (and re-backs up) the migration.
         yaml.set("data-version", ryuzuinfiniteshop.ryuzuinfiniteshop.migration.MigratorRegistry.CURRENT_VERSION);
         try {
-            File parent = file.getParentFile();
-            if (!parent.exists() && !parent.mkdirs())
-                throw new IOException("Could not create directory " + parent);
-            yaml.save(file);
+            DiffBackupUtil.write(file, yaml.saveToString(), DiffBackupUtil.backupFile(shop.getID()), "shops/" + file.getName());
         } catch (IOException e) {
             throw new RuntimeException(LanguageKey.ERROR_FILE_SAVING.getMessage(file.getName()), e);
         }

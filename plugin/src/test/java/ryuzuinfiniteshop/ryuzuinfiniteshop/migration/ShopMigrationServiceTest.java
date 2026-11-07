@@ -90,8 +90,8 @@ class ShopMigrationServiceTest {
         assertEquals(1, config.getInt("data-version"), "data-version should be 1");
         assertNull(config.getString("Npc.Options.prof"), "old prof key should be removed");
 
-        // backup check
-        File[] backups = backupDir.listFiles();
+        // backup check (the directory also holds <shop>.diff history files)
+        File[] backups = backupDir.listFiles(File::isDirectory);
         assertNotNull(backups, "backup dir should exist");
         assertTrue(backups.length >= 1, "at least one backup dir should exist");
         File latestBackup = backups[0];

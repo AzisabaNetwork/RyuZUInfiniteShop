@@ -28,6 +28,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopFactory;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopRegistry;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.DiffBackupUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.FileUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.LocationUtil;
@@ -313,7 +314,6 @@ public class ShopUtil {
     }
 
     public static Shop reloadShop(Location location, String data, List<ShopTrade> trades) {
-        File file = FileUtil.initializeFile("shops/" + LocationUtil.toStringFromLocation(location) + ".yml");
         YamlConfiguration config = new YamlConfiguration();
         try {
             config.loadFromString(data);
@@ -321,16 +321,35 @@ public class ShopUtil {
             e.printStackTrace();
         }
 
-        String stringLocation = LocationUtil.toStringFromLocation(location);
-        if (getShops().containsKey(stringLocation)) getShop(stringLocation).removeShop();
         config.set("Trades", trades.stream().map(ShopTrade::serialize).collect(Collectors.toList()));
-
         try {
-            config.save(file);
+            return replaceShopData(location, config.saveToString());
         } catch (IOException e) {
             if (!Config.readOnlyIgnoreIOException) e.printStackTrace();
+            return createShopFromConfig(location, config);
         }
+    }
 
+    /**
+     * Overwrites a shop's file with {@code content} (recording the change in its diff history)
+     * and rebuilds the in-memory shop from it, replacing any loaded instance.
+     */
+    public static Shop replaceShopData(Location location, String content) throws IOException {
+        String id = LocationUtil.toStringFromLocation(location);
+        File file = new File(RyuZUInfiniteShop.getPlugin().getDataFolder(), "shops/" + id + ".yml");
+        YamlConfiguration config = new YamlConfiguration();
+        try {
+            config.loadFromString(content);
+        } catch (InvalidConfigurationException e) {
+            throw new IOException(e);
+        }
+        // Unload without deleting so the history records a plain edit instead of delete + recreate.
+        if (getShops().containsKey(id)) getShop(id).unload();
+        DiffBackupUtil.write(file, content, DiffBackupUtil.backupFile(id), "shops/" + file.getName());
+        return createShopFromConfig(location, config);
+    }
+
+    private static Shop createShopFromConfig(Location location, YamlConfiguration config) {
         String type = config.getString("Npc.Options.EntityType", "VILLAGER");
         String mythicmob = config.getString("Npc.Options.MythicMob");
         String citizen = config.getString("Npc.Options.Citizen");
@@ -485,6 +504,7 @@ public class ShopUtil {
 
     public static void reloadAllShopForMythicMobsReload(Runnable runnable) {
         HashMap<Player, ShopHolder> holders = getAllShopInventoryViewer();
+        ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.LegacyMythicItemMatcher.invalidate();
         runnable.run();
         for (Shop shop : getShops().values()) {
             if (shop.getNpcType() == NpcType.MYTHICMOB) {

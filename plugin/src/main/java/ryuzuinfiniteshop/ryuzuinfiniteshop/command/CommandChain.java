@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class CommandChain {
     public static void registerCommand() {
-        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "reload-single", "load", "save", "limit", "migrate");
+        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "reload-single", "load", "save", "limit", "migrate", "backup");
 
         CommandsGenerator.registerCommand(
                         "sis",
@@ -53,6 +53,8 @@ public class CommandChain {
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " searchability [true/false] [world] " + ChatColor.GOLD + LanguageKey.COMMAND_SET_SEARCHABLE.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " limit [increase/decrease/set] [player] [value] " + ChatColor.GOLD + LanguageKey.COMMAND_CHANGE_TRADE_LIMIT.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " migrate " + ChatColor.GOLD + LanguageKey.COMMAND_MIGRATE_SHOPS.getMessage());
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " backup list [shopId/options] " + ChatColor.GOLD + LanguageKey.COMMAND_BACKUP_LIST.getMessage());
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " backup restore [shopId/options] [number] " + ChatColor.GOLD + LanguageKey.COMMAND_BACKUP_RESTORE.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "[arg] " + ChatColor.GOLD + LanguageKey.COMMAND_ARGUMENT_REQUIRED.getMessage() + ", " + ChatColor.BLUE + "<arg> " + ChatColor.GOLD + LanguageKey.COMMAND_ARGUMENT_OPTIONAL.getMessage());
                             }
                             data.sendMessage("§a§l-------§e§l==============================§a§l-------");
@@ -98,6 +100,8 @@ public class CommandChain {
                     }
                 }
         ).permissions("sis.op").tabCompleteConditon(data -> !FileUtil.isSaveBlock(data));
+
+        registerBackupCommands();
 
         CommandsGenerator.registerCommand(
                         "sis.understand",
@@ -333,6 +337,102 @@ public class CommandChain {
                         .tabCompleteConditon(data -> isPlayer(data.getSender()) && !FileUtil.isSaveBlock(data))
                         .completePlayer(2)
         );
+    }
+
+    private static final int BACKUP_LIST_LIMIT = 20;
+
+    private static void registerBackupCommands() {
+        CommandsGenerator.registerCommand(
+                        "sis.backup",
+                        data -> {
+                            data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " backup list [shopId/options] " + ChatColor.GOLD + LanguageKey.COMMAND_BACKUP_LIST.getMessage());
+                            data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " backup restore [shopId/options] [number] " + ChatColor.GOLD + LanguageKey.COMMAND_BACKUP_RESTORE.getMessage());
+                        }
+                )
+                .permissions("sis.op")
+                // Every matching composition runs, so only show help when no subcommand was given.
+                .condition(data -> data.getArgs().length == 1)
+                .tabCompleteConditon(data -> data.getArgs().length <= 2);
+
+        CommandsGenerator.registerCommand(
+                        "sis.backup.list",
+                        data -> {
+                            String target = data.getArgs()[2];
+                            List<DiffBackupUtil.Entry> entries;
+                            try {
+                                entries = BackupRestoreService.list(target);
+                            } catch (Exception e) {
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_BACKUP_FAILED.getMessage(e.getMessage()));
+                                return;
+                            }
+                            if (entries.isEmpty()) {
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.YELLOW + LanguageKey.MESSAGE_BACKUP_EMPTY.getMessage(target));
+                                return;
+                            }
+                            data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_BACKUP_HEADER.getMessage(target, entries.size()));
+                            for (int i = Math.max(0, entries.size() - BACKUP_LIST_LIMIT); i < entries.size(); i++) {
+                                DiffBackupUtil.Entry entry = entries.get(i);
+                                data.sendMessage(ChatColor.AQUA + "#" + (i + 1) + " " + ChatColor.WHITE + entry.timestamp()
+                                        + ChatColor.GREEN + " +" + entry.added() + ChatColor.RED + " -" + entry.removed());
+                            }
+                        }
+                )
+                .permissions("sis.op")
+                .condition(data -> {
+                    if (data.getArgs().length < 3) {
+                        data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + "/" + data.getLabel() + " backup list [shopId/options]");
+                        return false;
+                    }
+                    return true;
+                })
+                .tabCompleteConditon(data -> data.getArgs().length <= 3)
+                .complete(2, data -> BackupRestoreService.targets());
+
+        CommandsGenerator.registerCommand(
+                        "sis.backup.restore",
+                        data -> {
+                            String target = data.getArgs()[2];
+                            if (!FileUtil.getSaveBlock().compareAndSet(false, true)) {
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_FILES_RELOADING_BLOCKED.getMessage());
+                                return;
+                            }
+                            try {
+                                List<DiffBackupUtil.Entry> entries = BackupRestoreService.list(target);
+                                int keep = Integer.parseInt(data.getArgs()[3]);
+                                if (entries.isEmpty()) {
+                                    data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.YELLOW + LanguageKey.MESSAGE_BACKUP_EMPTY.getMessage(target));
+                                    return;
+                                }
+                                if (keep > entries.size()) {
+                                    data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_BACKUP_INVALID_ENTRY.getMessage(entries.size()));
+                                    return;
+                                }
+                                BackupRestoreService.restore(target, keep);
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + LanguageKey.MESSAGE_BACKUP_RESTORED.getMessage(target, keep));
+                                if (data.getSender() instanceof Player p) SoundUtil.playSuccessSound(p);
+                            } catch (Exception e) {
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_BACKUP_FAILED.getMessage(e.getMessage()));
+                                RyuZUInfiniteShop.getPlugin().getLogger().warning("Backup restore of " + target + " failed: " + e);
+                            } finally {
+                                FileUtil.getSaveBlock().set(false);
+                            }
+                        }
+                )
+                .permissions("sis.op")
+                .condition(data -> {
+                    if (data.getArgs().length < 4) {
+                        data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + "/" + data.getLabel() + " backup restore [shopId/options] [number]");
+                        return false;
+                    }
+                    try {
+                        if (Integer.parseInt(data.getArgs()[3]) >= 0) return true;
+                    } catch (NumberFormatException ignored) {
+                    }
+                    data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.COMMAND_INVALID_INTEGER.getMessage());
+                    return false;
+                })
+                .tabCompleteConditon(data -> data.getArgs().length <= 4)
+                .complete(2, data -> BackupRestoreService.targets());
     }
 
     private static boolean isPlayer(CommandSender p) {

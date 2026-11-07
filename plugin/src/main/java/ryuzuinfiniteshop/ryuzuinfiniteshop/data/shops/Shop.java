@@ -11,6 +11,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.common.PageNavigationUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.gui.editor.ShopEditorGui;
@@ -33,6 +34,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.TradeUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -276,10 +278,23 @@ public class Shop {
     }
 
     public void removeShop() {
+        unload();
+        File backupFile = DiffBackupUtil.backupFile(getID());
+        if (backupFile != null) {
+            try {
+                DiffBackupUtil.recordDeletion(getFile(), backupFile, "shops/" + getFile().getName());
+            } catch (IOException e) {
+                if (!Config.readOnlyIgnoreIOException) e.printStackTrace();
+            }
+        }
+        getFile().delete();
+    }
+
+    /** Removes the shop from the world and the registry but keeps its file (used when replacing its data). */
+    public void unload() {
         removeNPC();
         if (npcType.equals(NpcType.CITIZEN)) CitizensHandler.destoryNPC(this);
         if (hologram != null) hologram.remove();
-        getFile().delete();
         ShopUtil.removeShop(getID());
     }
 

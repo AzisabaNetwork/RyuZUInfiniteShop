@@ -43,10 +43,10 @@ public class ObjectItem {
     }
 
     private static Object convert(Object object) {
-        if (object instanceof ItemStack && NBTUtil.getNMSStringTag((ItemStack) object, "Error") != null)
-            return new MythicItem(NBTUtil.getNMSStringTag((ItemStack) object, "Error"), ((ItemStack) object).getAmount());
-        if (object instanceof ItemStack && MythicInstanceProvider.isLoaded() && Config.saveByMMID && MythicInstanceProvider.getInstance().getID((ItemStack) object) != null)
-            return new MythicItem(MythicInstanceProvider.getInstance().getID((ItemStack) object), ((ItemStack) object).getAmount());
+        if (object instanceof ItemStack item && !ItemUtil.isAir(item)) {
+            Object resolved = MythicItem.resolve(item);
+            if (resolved != null) return resolved;
+        }
         if (object instanceof MythicItem && !Config.saveByMMID)
             return ((MythicItem) object).convertItemStack();
         else

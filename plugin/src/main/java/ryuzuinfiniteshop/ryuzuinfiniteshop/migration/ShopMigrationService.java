@@ -3,6 +3,7 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.migration;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.DiffBackupUtil;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -74,7 +75,11 @@ public final class ShopMigrationService {
                     if (backupDir != null) {
                         Files.copy(file.toPath(), new File(backupDir, file.getName()).toPath());
                     }
-                    yaml.save(file);
+                    // Recorded unconditionally: config.yml is not loaded yet at startup, and a gap here
+                    // would break restoring from older history entries.
+                    String id = file.getName().substring(0, file.getName().length() - ".yml".length());
+                    DiffBackupUtil.write(file, yaml.saveToString(),
+                            new File(shopsDir, "backup/" + id + ".diff"), "shops/" + file.getName());
                     migrated++;
                 } else {
                     skipped++;

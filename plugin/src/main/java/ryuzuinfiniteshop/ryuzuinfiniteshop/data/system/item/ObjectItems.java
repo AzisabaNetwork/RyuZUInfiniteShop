@@ -51,12 +51,9 @@ public class ObjectItems {
     //return MythicItems or ItemStack
     //from MythicItems or ItemStack
     private static Object convert(Object object) {
-        if (object instanceof ItemStack){
-            String tag = NBTUtil.getNMSStringTag((ItemStack) object, "Error");
-            if(tag != null)
-                return new MythicItem(tag, ((ItemStack) object).getAmount());
-            if (MythicInstanceProvider.isLoaded() && Config.saveByMMID && MythicInstanceProvider.getInstance().getID((ItemStack) object) != null)
-                return new MythicItem(MythicInstanceProvider.getInstance().getID((ItemStack) object), ((ItemStack) object).getAmount());
+        if (object instanceof ItemStack item && !ItemUtil.isAir(item)) {
+            Object resolved = MythicItem.resolve(item);
+            if (resolved != null) return resolved;
         }
         if (object instanceof MythicItem && !Config.saveByMMID)
             return ((MythicItem) object).convertItemStack();

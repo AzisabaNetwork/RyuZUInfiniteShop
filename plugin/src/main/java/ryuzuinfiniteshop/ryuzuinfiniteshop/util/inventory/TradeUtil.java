@@ -10,6 +10,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.ShopType;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.TradeOption;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.DiffBackupUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.FileUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
 
@@ -60,7 +61,7 @@ public class TradeUtil {
         YamlConfiguration config = new YamlConfiguration();
         if (ShopTrade.tradeOptions.isEmpty()) {
             try {
-                config.save(file);
+                DiffBackupUtil.write(file, config.saveToString(), DiffBackupUtil.backupFile("options"), "options.yml");
             } catch (IOException e) {
                 if (!Config.readOnlyIgnoreIOException) e.printStackTrace();
             }
@@ -73,7 +74,7 @@ public class TradeUtil {
             if (!config.contains(tradeID.toString())) ShopTrade.writeTradeOption(config, tradeID);
         }
         try {
-            config.save(file);
+            DiffBackupUtil.write(file, config.saveToString(), DiffBackupUtil.backupFile("options"), "options.yml");
         } catch (IOException e) {
             if (!Config.readOnlyIgnoreIOException) e.printStackTrace();
         }

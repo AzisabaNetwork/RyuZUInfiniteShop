@@ -68,6 +68,7 @@ public class FileUtil {
             HashMap<Player, ShopHolder> viewer = ShopUtil.getAllShopInventoryViewer();
             Config.load();
             LanguageConfig.load();
+            LegacyMythicItemMatcher.invalidate();
             new ReloadSession(viewer, new ArrayList<>(ShopUtil.getShops().values())).start();
             return true;
         } catch (Exception e) {

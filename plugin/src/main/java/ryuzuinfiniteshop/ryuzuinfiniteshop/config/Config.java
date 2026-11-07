@@ -16,6 +16,7 @@ public class Config {
     public static int autoSaveInterval;
     public static boolean editLog;
     public static boolean tradeLog;
+    public static boolean backupDiff;
     public static boolean saveByMMID;
     public static boolean overwriteConverting;
     public static boolean defaultSearchableInConverting;
@@ -36,6 +37,7 @@ public class Config {
         autoSaveInterval = yaml.getInt("AutoSaveInterval", 0);
         editLog = yaml.getBoolean("EditLog", true);
         tradeLog = yaml.getBoolean("TradeLog", true);
+        backupDiff = yaml.getBoolean("BackupDiff", true);
         saveByMMID = yaml.getBoolean("SaveByMMID", true);
         overwriteConverting = yaml.getBoolean("OverwriteConverting", false);
         defaultSearchableInConverting = yaml.getBoolean("DefaultSearchableInConverting", true);
@@ -55,6 +57,7 @@ public class Config {
         if (!yaml.contains("AutoSaveInterval")) yaml.set("AutoSaveInterval", autoSaveInterval);
         if (!yaml.contains("EditLog")) yaml.set("EditLog", editLog);
         if (!yaml.contains("TradeLog")) yaml.set("TradeLog", tradeLog);
+        if (!yaml.contains("BackupDiff")) yaml.set("BackupDiff", backupDiff);
         if (!yaml.contains("SaveByMMID")) yaml.set("SaveByMMID", saveByMMID);
         if (!yaml.contains("OverwriteConverting")) yaml.set("OverwriteConverting", overwriteConverting);
         if (!yaml.contains("DefaultSearchableInConverting"))

@@ -23,6 +23,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.ShopType;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.ObjectItems;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.event.TradeCompleteEvent;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.DiffBackupUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.FileUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VaultHandler;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.effect.SoundUtil;
@@ -142,7 +143,7 @@ public class ShopTrade {
         saveTradeOption(config, uuid);
 
         try {
-            config.save(file);
+            DiffBackupUtil.write(file, config.saveToString(), DiffBackupUtil.backupFile("options"), "options.yml");
         } catch (IOException e) {
             if (!Config.readOnlyIgnoreIOException) e.printStackTrace();
         }
