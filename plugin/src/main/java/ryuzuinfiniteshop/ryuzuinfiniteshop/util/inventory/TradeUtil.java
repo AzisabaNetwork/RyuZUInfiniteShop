@@ -102,6 +102,7 @@ public class TradeUtil {
                 for (String playerID : config.getConfigurationSection(tradeID + ".counts").getKeys(false))
                     ShopTrade.tradeCounts.put(UUID.fromString(playerID), UUID.fromString(tradeID), config.getInt(tradeID + ".counts." + playerID));
         }
+        ShopTrade.resolveDuplicatedTradeUUIDs();
     }
 
     public static ShopTrade getFirstTrade(ItemStack item) {

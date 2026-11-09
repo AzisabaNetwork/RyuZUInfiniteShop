@@ -223,6 +223,7 @@ public class ShopUtil {
             Shop shop = loadShopFile(deferred.file());
             if (shop != null) loaded.add(shop);
         }
+        ShopTrade.resolveDuplicatedTradeUUIDs();
         // Remove only after loading so a concurrent save never loses the trade IDs.
         deferredShops.remove(worldKey(worldName), pending);
         logInfo("Loaded " + loaded.size() + " shop(s) in world '" + worldName + "'.");

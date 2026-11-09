@@ -71,7 +71,43 @@ public class ShopTrade {
         this.giveData = new ObjectItems(config.get("give"));
         this.takeData = new ObjectItems(config.get("take"));
         if (config.containsKey("uuid"))
-            tradeUUID.put(this, UUID.fromString((String) config.get("uuid")));
+            registerLoadedUUID(UUID.fromString((String) config.get("uuid")));
+    }
+
+    /** Trade IDs reassigned during loading, mapped to the ID whose option and counts they inherit. */
+    private static final Map<UUID, UUID> duplicatedTradeUUIDs = new HashMap<>();
+
+    private void registerLoadedUUID(UUID uuid) {
+        ShopTrade owner = tradeUUID.inverse().get(uuid);
+        if (owner == null || owner.equals(this)) {
+            tradeUUID.put(this, uuid);
+            return;
+        }
+        // Another trade with different contents already uses this ID (e.g. a copied shop whose
+        // items were later edited or migrated differently). Give this trade its own ID and let it
+        // inherit the original option once options are loaded; the shop is saved with the new ID.
+        UUID newUUID = UUID.randomUUID();
+        tradeUUID.put(this, newUUID);
+        duplicatedTradeUUIDs.put(newUUID, uuid);
+        RyuZUInfiniteShop plugin = RyuZUInfiniteShop.getPlugin();
+        (plugin != null ? plugin.getLogger() : Bukkit.getLogger()).warning(
+                "Trade ID " + uuid + " is used by trades with different contents; reassigned to " + newUUID);
+    }
+
+    /**
+     * Copies trade options and counts from original trade IDs to the IDs reassigned during loading.
+     * Must be called after options.yml is loaded.
+     */
+    public static void resolveDuplicatedTradeUUIDs() {
+        if (duplicatedTradeUUIDs.isEmpty()) return;
+        duplicatedTradeUUIDs.forEach((newUUID, source) -> {
+            TradeOption option = tradeOptions.get(source);
+            if (option != null)
+                tradeOptions.put(newUUID, TradeOption.deserialize(option.serialize()));
+            new HashMap<>(tradeCounts.column(source)).forEach((player, count) -> tradeCounts.put(player, newUUID, count));
+        });
+        duplicatedTradeUUIDs.clear();
+        markOptionsDirty();
     }
 
     public ShopTrade(ItemStack[] give, ItemStack[] take) {
