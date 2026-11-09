@@ -40,6 +40,7 @@ public final class ShopMigrationService {
             try {
                 YamlConfiguration yaml = new YamlConfiguration();
                 String text = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+                String originalText = text;
                 // Legacy heads/attributes must be rewritten before Bukkit deserializes (and drops) them.
                 int rawVersion = rawDataVersion(text);
                 if (rawVersion < LegacyMythicTypeMigration.TO_VERSION) text = LegacyMythicTypeMigration.fixRawYaml(text);
@@ -71,6 +72,12 @@ public final class ShopMigrationService {
                     int restored = LegacyShieldColorMigration.restore(yaml, shopsDir, file.getName());
                     if (restored > 0 && RyuZUInfiniteShop.getPlugin() != null)
                         RyuZUInfiniteShop.getPlugin().getLogger().info("Restored the colors of " + restored + " shields of " + file.getName() + " from its 1.15.2 backup");
+                }
+
+                if (currentVersion < LegacyContainerMigration.TO_VERSION) {
+                    int restored = LegacyContainerMigration.restore(yaml, originalText, shopsDir, file.getName());
+                    if (restored > 0 && RyuZUInfiniteShop.getPlugin() != null)
+                        RyuZUInfiniteShop.getPlugin().getLogger().info("Restored the contents of " + restored + " containers of " + file.getName() + " saved by 1.15.2");
                 }
 
                 boolean fileChanged = false;

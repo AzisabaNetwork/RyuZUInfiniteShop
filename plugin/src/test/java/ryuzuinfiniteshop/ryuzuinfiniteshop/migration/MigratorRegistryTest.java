@@ -11,7 +11,7 @@ class MigratorRegistryTest {
 
     @Test
     void currentVersionIsEight() {
-        assertEquals(8, MigratorRegistry.CURRENT_VERSION);
+        assertEquals(9, MigratorRegistry.CURRENT_VERSION);
     }
 
     @Test
