@@ -46,6 +46,7 @@ public final class ShopMigrationService {
                 if (rawVersion < LegacySkullMigration.TO_VERSION) text = LegacySkullMigration.fixRawYaml(text);
                 if (rawVersion < LegacyAttributeMigration.TO_VERSION) text = LegacyAttributeMigration.fixRawYaml(text);
                 if (rawVersion < LegacyLeatherColorMigration.TO_VERSION) text = LegacyLeatherColorMigration.fixRawYaml(text);
+                if (rawVersion < LegacyShieldColorMigration.TO_VERSION) text = LegacyShieldColorMigration.fixRawYaml(text);
                 yaml.loadFromString(text);
                 int currentVersion = yaml.getInt("data-version", 0);
 
@@ -64,6 +65,12 @@ public final class ShopMigrationService {
                     int restored = LegacyLeatherColorMigration.restore(yaml, shopsDir, file.getName());
                     if (restored > 0 && RyuZUInfiniteShop.getPlugin() != null)
                         RyuZUInfiniteShop.getPlugin().getLogger().info("Restored the color of " + restored + " leather armor items of " + file.getName() + " from its 1.15.2 backup");
+                }
+
+                if (currentVersion < LegacyShieldColorMigration.TO_VERSION) {
+                    int restored = LegacyShieldColorMigration.restore(yaml, shopsDir, file.getName());
+                    if (restored > 0 && RyuZUInfiniteShop.getPlugin() != null)
+                        RyuZUInfiniteShop.getPlugin().getLogger().info("Restored the colors of " + restored + " shields of " + file.getName() + " from its 1.15.2 backup");
                 }
 
                 boolean fileChanged = false;

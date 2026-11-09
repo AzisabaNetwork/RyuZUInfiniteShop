@@ -17,6 +17,7 @@ public final class MigratorRegistry {
         register(new LegacyMythicTypeMigration());
         register(new LegacyBackupMythicIdMigration());
         register(new LegacyLeatherColorMigration());
+        register(new LegacyShieldColorMigration());
         CURRENT_VERSION = STEPS.stream().mapToInt(MigrationStep::toVersion).max().orElse(0);
     }
 

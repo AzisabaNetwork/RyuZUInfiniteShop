@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class MigratorRegistryTest {
 
     @Test
-    void currentVersionIsSeven() {
-        assertEquals(7, MigratorRegistry.CURRENT_VERSION);
+    void currentVersionIsEight() {
+        assertEquals(8, MigratorRegistry.CURRENT_VERSION);
     }
 
     @Test
