@@ -22,7 +22,7 @@ public class ItemUtil {
         if (inventory.firstEmpty() != -1) return true;
         if (ItemUtil.isAir(item)) return true;
         int stackSize = item.getType().getMaxStackSize();
-        int sum = Arrays.stream(getContents(inventory)).filter(Objects::nonNull).filter(i -> i.isSimilar(item)).mapToInt(i -> stackSize - i.getAmount()).sum();
+        int sum = Arrays.stream(getContents(inventory)).filter(Objects::nonNull).filter(i -> ItemNormalizer.isSimilar(i, item)).mapToInt(i -> stackSize - i.getAmount()).sum();
         return item.getAmount() <= sum;
     }
 
@@ -50,10 +50,36 @@ public class ItemUtil {
         HashMap<ItemStack, Integer> need = new HashMap<>();
         Arrays.stream(items).filter(Objects::nonNull).forEach(item -> need.put(item, containsCount(items, item)));
         HashMap<ItemStack, Integer> has = new HashMap<>();
-        if (need.keySet().stream().anyMatch(item -> Arrays.stream(getContents(inventory)).noneMatch(item::isSimilar)))
+        if (need.keySet().stream().anyMatch(item -> Arrays.stream(getContents(inventory)).noneMatch(i -> ItemNormalizer.isSimilar(item, i))))
             return false;
         need.keySet().forEach(item -> has.put(item, containsCount(getContents(inventory), item)));
         return need.keySet().stream().noneMatch(item -> has.get(item) < need.get(item));
+    }
+
+    /**
+     * Takes the items out of the inventory. Unlike {@link Inventory#removeItem} this matches items the same way as
+     * {@link #contains(Inventory, ItemStack...)} (normalized, see {@link ItemNormalizer}), so an item that was found
+     * is always taken as well.
+     */
+    public static void remove(Inventory inventory, ItemStack... items) {
+        if (items == null) return;
+        int slots = getContents(inventory).length;
+        for (ItemStack item : items) {
+            if (isAir(item)) continue;
+            int left = item.getAmount();
+            for (int slot = 0; slot < slots && left > 0; slot++) {
+                ItemStack content = inventory.getItem(slot);
+                if (isAir(content) || !ItemNormalizer.isSimilar(content, item)) continue;
+                int taken = Math.min(left, content.getAmount());
+                left -= taken;
+                if (taken >= content.getAmount()) {
+                    inventory.setItem(slot, null);
+                } else {
+                    content.setAmount(content.getAmount() - taken);
+                    inventory.setItem(slot, content);
+                }
+            }
+        }
     }
 
     public static ItemStack[] getContents(Inventory inventory) {
@@ -86,11 +112,11 @@ public class ItemUtil {
     }
 
     public static int containsCount(ItemStack[] contents, ItemStack item) {
-        return Arrays.stream(contents).filter(Objects::nonNull).filter(item::isSimilar).mapToInt(ItemStack::getAmount).sum();
+        return Arrays.stream(contents).filter(Objects::nonNull).filter(i -> ItemNormalizer.isSimilar(item, i)).mapToInt(ItemStack::getAmount).sum();
     }
 
     public static int capacityCount(ItemStack[] contents, ItemStack item) {
-        return Arrays.stream(contents).filter(Objects::nonNull).filter(i -> i.isSimilar(item)).mapToInt(i -> i.getType().getMaxStackSize() - i.getAmount()).sum();
+        return Arrays.stream(contents).filter(Objects::nonNull).filter(i -> ItemNormalizer.isSimilar(i, item)).mapToInt(i -> i.getType().getMaxStackSize() - i.getAmount()).sum();
     }
 
     public static ItemStack getNamedItem(ItemStack item, String name) {

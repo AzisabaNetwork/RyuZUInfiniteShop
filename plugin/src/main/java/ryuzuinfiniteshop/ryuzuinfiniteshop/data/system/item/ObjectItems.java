@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemNormalizer;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
 
@@ -59,6 +60,8 @@ public class ObjectItems {
             return ((MythicItem) object).convertItemStack();
         // Player heads are no longer rebuilt here: the legacy GameProfile hack breaks the profile of 1.21 heads.
         // Heads saved by 1.15.2 are repaired once by LegacySkullMigration.
+        // Same data as the items players carry (AziSync, EnderChestPlus, StorageBox, ItemStash): see ItemNormalizer.
+        if (object instanceof ItemStack stack) return ItemNormalizer.normalize(stack);
         return object;
     }
 

@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemNormalizer;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
 
@@ -39,7 +40,7 @@ public class ObjectItem {
         else if (object == null || ItemUtil.isAir((ItemStack) object))
             return ItemUtil.isAir(item);
         else
-            return ((ItemStack) object).isSimilar(item);
+            return ItemNormalizer.isSimilar((ItemStack) object, item);
     }
 
     private static Object convert(Object object) {
@@ -49,6 +50,8 @@ public class ObjectItem {
         }
         if (object instanceof MythicItem && !Config.saveByMMID)
             return ((MythicItem) object).convertItemStack();
+        else if (object instanceof ItemStack stack)
+            return ItemNormalizer.normalize(stack); // same data as the items players carry, see ItemNormalizer
         else
             return object;
     }
