@@ -59,8 +59,10 @@ public class ShopTrade {
 
     public ConfigurationSection serialize() {
         ConfigurationSection config = new MemoryConfiguration();
-        config.set("give", giveData.reconvert().getObjects());
-        config.set("take", takeData.reconvert().getObjects());
+        // The objects are already in their saved form (MythicItem or normalized ItemStack, see ObjectItems):
+        // regenerating and resolving every item again on each save only costs time.
+        config.set("give", giveData.getObjects());
+        config.set("take", takeData.getObjects());
         UUID uuid = tradeUUID.get(this);
         if (uuid != null)
             config.set("uuid", uuid.toString());
@@ -290,10 +292,10 @@ public class ShopTrade {
         ItemStack[] items = new ItemStack[type.getAddSlot()];
         ItemStack filter = getFilter(mode);
         items[type.getSubtractSlot()] = filter;
-        for (int i = 0; i < getTakeItems().length; i++)
-            items[i] = getTakeItems()[i];
-        for (int i = 0; i < getGiveItems().length; i++)
-            items[type.getSubtractSlot() + 1 + i] = getGiveItems()[i];
+        ItemStack[] take = getTakeItems();
+        ItemStack[] give = getGiveItems();
+        System.arraycopy(take, 0, items, 0, take.length);
+        System.arraycopy(give, 0, items, type.getSubtractSlot() + 1, give.length);
         return items;
     }
 
@@ -307,11 +309,12 @@ public class ShopTrade {
 
     public ItemStack[] getTradeItems(ShopType type, ItemStack filter) {
         ItemStack[] items = new ItemStack[9];
-        items[(type.equals(ShopType.SixtoTwo) ? 6 : 4)] = filter;
-        for (int i = 0; i < getTakeItems().length; i++)
-            items[i] = getTakeItems()[i];
-        for (int i = 0; i < getGiveItems().length; i++)
-            items[(type.equals(ShopType.SixtoTwo) ? 6 : 4) + 1 + i] = getGiveItems()[i];
+        int filterSlot = type.equals(ShopType.SixtoTwo) ? 6 : 4;
+        items[filterSlot] = filter;
+        ItemStack[] take = getTakeItems();
+        ItemStack[] give = getGiveItems();
+        System.arraycopy(take, 0, items, 0, take.length);
+        System.arraycopy(give, 0, items, filterSlot + 1, give.length);
         return items;
     }
 
@@ -401,8 +404,7 @@ public class ShopTrade {
     }
 
     private boolean isError() {
-        return Arrays.stream(getGiveItems()).anyMatch(item -> NBTUtil.getNMSStringTag(item, "Error") != null) ||
-                Arrays.stream(getTakeItems()).anyMatch(item -> NBTUtil.getNMSStringTag(item, "Error") != null);
+        return giveData.hasError() || takeData.hasError();
     }
 
     private boolean isLimited(Player p) {

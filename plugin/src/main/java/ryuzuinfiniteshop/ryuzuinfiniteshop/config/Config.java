@@ -17,7 +17,13 @@ public class Config {
     public static boolean editLog;
     public static boolean tradeLog;
     public static boolean backupDiff;
+    /**
+     * @deprecated MythicMobs items are always saved by their MMID now; the setting is only kept so old configs load.
+     */
+    @Deprecated
     public static boolean saveByMMID;
+    /** MMIDs whose items are kept as they are instead of being saved by MMID (case-insensitive, "Prefix*" allowed). */
+    public static java.util.List<String> mythicItemExcludedIds = new java.util.ArrayList<>();
     public static boolean overwriteConverting;
     public static boolean defaultSearchableInConverting;
     public static boolean followPlayer;
@@ -39,6 +45,7 @@ public class Config {
         tradeLog = yaml.getBoolean("TradeLog", true);
         backupDiff = yaml.getBoolean("BackupDiff", true);
         saveByMMID = yaml.getBoolean("SaveByMMID", true);
+        mythicItemExcludedIds = new java.util.ArrayList<>(yaml.getStringList("MythicItemExcludedIDs"));
         overwriteConverting = yaml.getBoolean("OverwriteConverting", false);
         defaultSearchableInConverting = yaml.getBoolean("DefaultSearchableInConverting", true);
         followPlayer = yaml.getBoolean("FollowPlayer", false);
@@ -59,6 +66,7 @@ public class Config {
         if (!yaml.contains("TradeLog")) yaml.set("TradeLog", tradeLog);
         if (!yaml.contains("BackupDiff")) yaml.set("BackupDiff", backupDiff);
         if (!yaml.contains("SaveByMMID")) yaml.set("SaveByMMID", saveByMMID);
+        if (!yaml.contains("MythicItemExcludedIDs")) yaml.set("MythicItemExcludedIDs", mythicItemExcludedIds);
         if (!yaml.contains("OverwriteConverting")) yaml.set("OverwriteConverting", overwriteConverting);
         if (!yaml.contains("DefaultSearchableInConverting"))
             yaml.set("DefaultSearchableInConverting", defaultSearchableInConverting);
@@ -72,6 +80,19 @@ public class Config {
         } catch (IOException e) {
             if (!readOnlyIgnoreIOException) e.printStackTrace();
         }
+    }
+
+    /** Whether items of this MMID are excluded from being saved by MMID (see {@code MythicItemExcludedIDs}). */
+    public static boolean isMythicItemExcluded(String id) {
+        if (id == null || mythicItemExcludedIds == null) return false;
+        String lower = id.toLowerCase(java.util.Locale.ROOT);
+        for (String entry : mythicItemExcludedIds) {
+            if (entry == null || entry.isBlank()) continue;
+            String pattern = entry.trim().toLowerCase(java.util.Locale.ROOT);
+            if (pattern.endsWith("*") ? lower.startsWith(pattern.substring(0, pattern.length() - 1)) : lower.equals(pattern))
+                return true;
+        }
+        return false;
     }
 
     public static void runAutoSave() {

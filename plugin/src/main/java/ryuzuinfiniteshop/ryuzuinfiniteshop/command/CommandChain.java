@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class CommandChain {
     public static void registerCommand() {
-        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "reload-single", "load", "save", "limit", "migrate", "backup");
+        Set<String> args1 = Sets.newHashSet("list", "search", "spawn", "open", "searchability", "list", "reload", "reload-single", "load", "save", "limit", "migrate", "backup", "mmid");
 
         CommandsGenerator.registerCommand(
                         "sis",
@@ -50,6 +50,7 @@ public class CommandChain {
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " reload " + ChatColor.GOLD + LanguageKey.COMMAND_RELOAD_ALL_DATA.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " reload-single [shopId] " + ChatColor.GOLD + LanguageKey.COMMAND_RELOAD_SHOP.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " save " + ChatColor.GOLD + LanguageKey.COMMAND_SAVE_ALL_DATA.getMessage());
+                                data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " mmid <shopId> " + ChatColor.GOLD + "MMID保存の判定理由を表示");
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " searchability [true/false] [world] " + ChatColor.GOLD + LanguageKey.COMMAND_SET_SEARCHABLE.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " limit [increase/decrease/set] [player] [value] " + ChatColor.GOLD + LanguageKey.COMMAND_CHANGE_TRADE_LIMIT.getMessage());
                                 data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.BLUE + "/" + data.getLabel() + " migrate " + ChatColor.GOLD + LanguageKey.COMMAND_MIGRATE_SHOPS.getMessage());
@@ -90,6 +91,44 @@ public class CommandChain {
                 "sis.save",
                 data -> FileUtil.saveAll()
         ).permissions("sis.op").tabCompleteConditon(data -> !FileUtil.isSaveBlock(data));
+
+        // Shows why items are (not) saved by MMID: the item in hand, or every trade item of a shop without an MMID.
+        CommandsGenerator.registerCommand(
+                "sis.mmid",
+                data -> {
+                    if (data.getArgs().length == 0) {
+                        if (!(data.getSender() instanceof Player p)) {
+                            data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + "/" + data.getLabel() + " mmid [shopId]");
+                            return;
+                        }
+                        org.bukkit.inventory.ItemStack hand = p.getInventory().getItemInMainHand();
+                        ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.MythicItem.explain(hand)
+                                .forEach(line -> data.sendMessage(ChatColor.GRAY + line));
+                        return;
+                    }
+                    Shop shop = ShopUtil.getShop(data.getArgs()[0]);
+                    if (shop == null) {
+                        data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.RED + LanguageKey.MESSAGE_SHOP_NOT_EXIST.getMessage());
+                        return;
+                    }
+                    int shown = 0;
+                    for (int i = 0; i < shop.getTrades().size(); i++) {
+                        ShopTrade trade = shop.getTrades().get(i);
+                        List<org.bukkit.inventory.ItemStack> items = new ArrayList<>(Arrays.asList(trade.getTakeItems()));
+                        items.addAll(Arrays.asList(trade.getGiveItems()));
+                        for (org.bukkit.inventory.ItemStack item : items) {
+                            if (item == null || item.getType().isAir()) continue;
+                            if (MythicInstanceProvider.isLoaded() && MythicInstanceProvider.getInstance().getID(item) != null) continue;
+                            String name = item.hasItemMeta() && item.getItemMeta().hasDisplayName() ? item.getItemMeta().getDisplayName() : item.getType().name();
+                            data.sendMessage(ChatColor.YELLOW + "trade " + (i + 1) + ": " + ChatColor.RESET + name);
+                            ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.MythicItem.explain(item)
+                                    .forEach(line -> data.sendMessage(ChatColor.GRAY + "  " + line));
+                            shown++;
+                        }
+                    }
+                    if (shown == 0) data.sendMessage(RyuZUInfiniteShop.prefixCommand + ChatColor.GREEN + "every trade item has an MMID or is plain");
+                }
+        ).permissions("sis.op");
 
         CommandsGenerator.registerCommand(
                 "sis.migrate",

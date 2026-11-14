@@ -48,12 +48,9 @@ public class ObjectItem {
             Object resolved = MythicItem.resolve(item);
             if (resolved != null) return resolved;
         }
-        if (object instanceof MythicItem && !Config.saveByMMID)
-            return ((MythicItem) object).convertItemStack();
-        else if (object instanceof ItemStack stack)
+        if (object instanceof ItemStack stack)
             return ItemNormalizer.normalize(stack); // same data as the items players carry, see ItemNormalizer
-        else
-            return object;
+        return object;
     }
 
     public ObjectItem reconvert() {

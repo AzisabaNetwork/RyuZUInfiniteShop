@@ -21,6 +21,11 @@ public interface IMythicHandler {
 
     ItemStack getMythicItem(String id, int amount);
 
+    /** Every MythicMobs item ID currently registered. */
+    default Collection<String> getMythicItemNames() {
+        return java.util.Collections.emptyList();
+    }
+
     Entity spawnMythicMob(Location location, String id);
 
     EntityType getEntityType(String id);

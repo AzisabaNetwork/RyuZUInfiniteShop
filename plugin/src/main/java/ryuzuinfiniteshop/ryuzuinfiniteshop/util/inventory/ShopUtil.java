@@ -506,6 +506,8 @@ public class ShopUtil {
     public static void reloadAllShopForMythicMobsReload(Runnable runnable) {
         HashMap<Player, ShopHolder> holders = getAllShopInventoryViewer();
         ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.LegacyMythicItemMatcher.invalidate();
+        ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.CurrentMythicItemMatcher.invalidate();
+        ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.MythicItem.clearCache();
         runnable.run();
         for (Shop shop : getShops().values()) {
             if (shop.getNpcType() == NpcType.MYTHICMOB) {

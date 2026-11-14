@@ -62,6 +62,11 @@ public class MythicHandlerV5_12_0 implements IMythicHandler, Listener {
     }
 
     @Override
+    public Collection<String> getMythicItemNames() {
+        return new java.util.ArrayList<>(getMythicMobsInstance().getItemManager().getItemNames());
+    }
+
+    @Override
     public Entity spawnMythicMob(Location location, String id) {
         try {
             return getMythicMobsInstance().getAPIHelper().spawnMythicMob(id, location);

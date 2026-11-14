@@ -1,6 +1,5 @@
 package ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item;
 
-import lombok.EqualsAndHashCode;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
@@ -14,9 +13,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@EqualsAndHashCode(doNotUseGetters = true)
 public class ObjectItems {
     private final List<Object> objects;
+    /** Hashing ItemStacks is costly and trades are looked up by hash all the time (options, counts). */
+    private int hash;
+    private boolean hashed;
 
     public ObjectItems(Object object) {
         this.objects = ((List<Object>) object).stream().map(ObjectItems::convert).collect(Collectors.toList());
@@ -35,18 +36,51 @@ public class ObjectItems {
     }
 
     public ItemStack[] toItemStacks() {
-        return objects.stream().map(obj -> {
-            if (obj instanceof MythicItem)
-                return ((MythicItem) obj).convertItemStack();
+        ItemStack[] result = new ItemStack[objects.size()];
+        for (int i = 0; i < result.length; i++) {
+            Object obj = objects.get(i);
+            if (obj instanceof MythicItem mythicItem)
+                result[i] = mythicItem.convertItemStack(); // already a fresh copy
             else if (obj == null || ItemUtil.isAir((ItemStack) obj))
-                return new ItemStack(Material.AIR);
+                result[i] = new ItemStack(Material.AIR);
             else
-                return (ItemStack) obj;
-        }).map(ItemStack::clone).toArray(ItemStack[]::new);
+                result[i] = ((ItemStack) obj).clone();
+        }
+        return result;
+    }
+
+    /** Whether any item cannot be generated (unknown MMID or MythicMobs missing). */
+    public boolean hasError() {
+        for (Object obj : objects) {
+            if (obj instanceof MythicItem mythicItem) {
+                if (mythicItem.isError()) return true;
+            } else if (obj instanceof ItemStack stack && !ItemUtil.isAir(stack)
+                    && NBTUtil.getNMSStringTag(stack, "Error") != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void setObject(Object object, int index) {
         objects.set(index, convert(object));
+        hashed = false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ObjectItems other)) return false;
+        return hashCode() == other.hashCode() && objects.equals(other.objects);
+    }
+
+    @Override
+    public int hashCode() {
+        if (!hashed) {
+            hash = objects.hashCode();
+            hashed = true;
+        }
+        return hash;
     }
 
     //return MythicItems or ItemStack
@@ -56,8 +90,6 @@ public class ObjectItems {
             Object resolved = MythicItem.resolve(item);
             if (resolved != null) return resolved;
         }
-        if (object instanceof MythicItem && !Config.saveByMMID)
-            return ((MythicItem) object).convertItemStack();
         // Player heads are no longer rebuilt here: the legacy GameProfile hack breaks the profile of 1.21 heads.
         // Heads saved by 1.15.2 are repaired once by LegacySkullMigration.
         // Same data as the items players carry (AziSync, EnderChestPlus, StorageBox, ItemStash): see ItemNormalizer.
