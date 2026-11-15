@@ -38,15 +38,52 @@ public class ObjectItems {
     public ItemStack[] toItemStacks() {
         ItemStack[] result = new ItemStack[objects.size()];
         for (int i = 0; i < result.length; i++) {
-            Object obj = objects.get(i);
-            if (obj instanceof MythicItem mythicItem)
-                result[i] = mythicItem.convertItemStack(); // already a fresh copy
-            else if (obj == null || ItemUtil.isAir((ItemStack) obj))
-                result[i] = new ItemStack(Material.AIR);
-            else
-                result[i] = ((ItemStack) obj).clone();
+            result[i] = toItemStack(i);
         }
         return result;
+    }
+
+    public int size() {
+        return objects.size();
+    }
+
+    public ItemStack toItemStack(int index) {
+        Object obj = objects.get(index);
+        if (obj instanceof MythicItem mythicItem)
+            return mythicItem.convertItemStack(); // already a fresh copy
+        if (obj == null || ItemUtil.isAir((ItemStack) obj))
+            return new ItemStack(Material.AIR);
+        return ((ItemStack) obj).clone();
+    }
+
+    /**
+     * Whether the stored item at {@code index} is similar to {@code item}, using the same
+     * comparison as {@code toItemStack(index).isSimilar(item)} without building an array.
+     */
+    public boolean isSimilar(int index, ItemStack item) {
+        Object obj = objects.get(index);
+        if (obj instanceof MythicItem) {
+            return ((MythicItem) obj).convertItemStack().isSimilar(item);
+        }
+        if (obj == null || ItemUtil.isAir((ItemStack) obj)) {
+            return ItemUtil.isAir(item);
+        }
+        return ((ItemStack) obj).isSimilar(item);
+    }
+
+    /** The display name of the stored item, or null when it has none. */
+    public String getDisplayName(int index) {
+        Object obj = objects.get(index);
+        ItemStack item;
+        if (obj instanceof MythicItem) {
+            item = ((MythicItem) obj).convertItemStack();
+        } else if (obj == null || ItemUtil.isAir((ItemStack) obj)) {
+            return null;
+        } else {
+            item = (ItemStack) obj;
+        }
+        if (!item.hasItemMeta()) return null;
+        return item.getItemMeta().getDisplayName();
     }
 
     /** Whether any item cannot be generated (unknown MMID or MythicMobs missing). */

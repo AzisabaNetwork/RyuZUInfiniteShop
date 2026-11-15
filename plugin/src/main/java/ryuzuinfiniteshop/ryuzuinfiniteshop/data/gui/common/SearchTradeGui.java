@@ -40,7 +40,9 @@ public class SearchTradeGui extends TradesGui {
                 }
             } else {
                 Shop shop = shops.get(i);
-                ItemStack[] items = trades.get(i).getTradeItems(shop.getShopType(), shop.getID(), player);
+                ShopTrade trade = trades.get(i);
+                ShopTrade.TradeResult result = trade.getResult(player, shop);
+                ItemStack[] items = trade.getTradeItems(shop.getShopType(), trade.getFilter(shop, shop.getPage(trade), player, result));
                 for (int j = 0; j < 9; j++) {
                     inv.setItem((i % PageNavigationUtil.SEARCH_PAGE_SIZE) * 9 + j, items[j]);
                 }

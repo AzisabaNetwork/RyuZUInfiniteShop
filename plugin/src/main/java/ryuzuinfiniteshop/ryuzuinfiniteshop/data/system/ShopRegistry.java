@@ -3,9 +3,9 @@ package ryuzuinfiniteshop.ryuzuinfiniteshop.data.system;
 import lombok.Getter;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Registry for all Shop instances, keyed by location-based ID.
@@ -37,14 +37,14 @@ public final class ShopRegistry {
      */
     public static LinkedHashMap<String, Shop> getSortedShops(boolean editMode, String name) {
         LinkedHashMap<String, Shop> sorted = new LinkedHashMap<>();
-        shops.keySet().stream()
-                .sorted(Comparator.naturalOrder())
-                .filter(key -> {
-                    Shop shop = shops.get(key);
+        shops.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .filter(entry -> {
+                    Shop shop = entry.getValue();
                     if (name != null && !shop.containsDisplayName(name)) return false;
                     return editMode || shop.isSearchable();
                 })
-                .forEach(key -> sorted.put(key, shops.get(key)));
+                .forEach(entry -> sorted.put(entry.getKey(), entry.getValue()));
         return sorted;
     }
 }
