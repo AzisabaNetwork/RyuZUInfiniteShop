@@ -17,6 +17,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ItemUtil {
+    /**
+     * Built on first use rather than during class initialisation: creating an ItemStack needs a running server.
+     * See {@link #getWhitePanel()}.
+     */
+    private static ItemStack whitePanel;
+
     //アイテムを与えることが可能か調べる
     public static boolean ableGive(Inventory inventory, ItemStack item) {
         if (inventory.firstEmpty() != -1) return true;
@@ -313,10 +319,10 @@ public class ItemUtil {
     }
 
     public static ItemStack getWhitePanel() {
-        return WHITE_PANEL;
+        if (whitePanel == null)
+            whitePanel = getNamedItem(getColoredItem("WHITE_STAINED_GLASS_PANE"), ChatColor.WHITE + "");
+        return whitePanel.clone();
     }
-
-    private static final ItemStack WHITE_PANEL = getNamedItem(getColoredItem("WHITE_STAINED_GLASS_PANE"), ChatColor.WHITE + "");
 
     public static ItemStack getColoredItem(String material) {
         return XMaterial.matchXMaterial(material).get().parseItem();

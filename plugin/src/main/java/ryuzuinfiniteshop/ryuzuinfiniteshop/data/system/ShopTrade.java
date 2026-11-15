@@ -29,7 +29,6 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VaultHandler;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.effect.SoundUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,8 +42,11 @@ public class ShopTrade {
     public static final HashMap<UUID, TradeOption> tradeOptions = new HashMap<>();
     private static final Random random = new Random();
     private static final AtomicBoolean optionsDirty = new AtomicBoolean(true);
-    /** Reusable panel item; it is only ever placed into inventories and never mutated. */
-    private static final ItemStack FILTER = ItemUtil.getNamedItem(ItemUtil.getColoredItem("BLACK_STAINED_GLASS_PANE"), ChatColor.BLACK + "");
+    /**
+     * Reusable panel item, built on first use rather than during class initialisation: creating an ItemStack
+     * needs a running server. {@link #getFilter()} hands out copies so callers can mutate them freely.
+     */
+    private static ItemStack filter;
 
     public static boolean consumeOptionsDirty() {
         return optionsDirty.getAndSet(false);
@@ -219,7 +221,9 @@ public class ShopTrade {
     }
 
     public static ItemStack getFilter() {
-        return FILTER;
+        if (filter == null)
+            filter = ItemUtil.getNamedItem(ItemUtil.getColoredItem("BLACK_STAINED_GLASS_PANE"), ChatColor.BLACK + "");
+        return filter.clone();
     }
 
     public ItemStack getFilter(ShopMode mode) {
@@ -228,12 +232,6 @@ public class ShopTrade {
 
     public static ItemStack getFilterNoData(ShopMode mode) {
         return mode.equals(ShopMode.EDIT) ? getSettingsFilterNoData() : getFilter();
-    }
-
-    public ItemStack getFilter(String id, Player player) {
-        Shop shop = ShopUtil.getShop(id);
-        if (shop == null) return getFilter();
-        return getFilter(shop, shop.getPage(this), player, getResult(player, shop));
     }
 
     public ItemStack getFilter(Shop shop, int page, Player player, TradeResult result) {
@@ -314,10 +312,6 @@ public class ShopTrade {
 
     public ItemStack[] getTradeItems(ShopType type) {
         return getTradeItems(type, getFilter(ShopMode.EDIT));
-    }
-
-    public ItemStack[] getTradeItems(ShopType type, String id, Player player) {
-        return getTradeItems(type, getFilter(id, player));
     }
 
     public ItemStack[] getTradeItems(ShopType type, ItemStack filter) {

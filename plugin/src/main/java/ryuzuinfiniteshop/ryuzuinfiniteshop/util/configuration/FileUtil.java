@@ -36,6 +36,8 @@ public class FileUtil {
     private static final ExecutorService saveExecutor = Executors.newSingleThreadExecutor(
             Thread.ofVirtual().name("SearchableInfiniteShop-Save-", 0).factory());
 
+    private static final int SHUTDOWN_WAIT_SECONDS = 5;
+
     public static File initializeFile(String path) {
         String[] splited = path.split("/");
         File folder = new File(RyuZUInfiniteShop.getPlugin().getDataFolder(), String.join("", Arrays.copyOf(splited, splited.length - 1)));
@@ -271,11 +273,19 @@ public class FileUtil {
         }
     }
 
-    /** Stops the background saver during plugin shutdown after pending work completes. */
+    /**
+     * Stops the background saver during plugin shutdown after pending work completes.
+     * <p>
+     * Waits at most {@value #SHUTDOWN_WAIT_SECONDS} seconds so a stuck save cannot hold up server shutdown;
+     * saves write to a temporary file and are moved into place, so an interrupted one leaves the previous
+     * file intact.
+     */
     public static void shutdownSaver() {
         saveExecutor.shutdown();
         try {
-            if (!saveExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+            if (!saveExecutor.awaitTermination(SHUTDOWN_WAIT_SECONDS, TimeUnit.SECONDS)) {
+                RyuZUInfiniteShop.getPlugin().getLogger().warning(
+                        "A background save did not finish within " + SHUTDOWN_WAIT_SECONDS + " seconds; interrupting it");
                 saveExecutor.shutdownNow();
             }
         } catch (InterruptedException e) {

@@ -66,7 +66,8 @@ public class ObjectItems {
             return ((MythicItem) obj).convertItemStack().isSimilar(item);
         }
         if (obj == null || ItemUtil.isAir((ItemStack) obj)) {
-            return ItemUtil.isAir(item);
+            // ItemStack#isSimilar(null) is false, and two air stacks are similar.
+            return item != null && ItemUtil.isAir(item);
         }
         return ((ItemStack) obj).isSimilar(item);
     }
