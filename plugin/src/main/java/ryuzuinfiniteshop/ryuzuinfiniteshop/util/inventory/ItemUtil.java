@@ -17,6 +17,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ItemUtil {
+    /**
+     * Built on first use rather than during class initialisation: creating an ItemStack needs a running server.
+     * See {@link #getWhitePanel()}.
+     */
+    private static ItemStack whitePanel;
+
     //アイテムを与えることが可能か調べる
     public static boolean ableGive(Inventory inventory, ItemStack item) {
         if (inventory.firstEmpty() != -1) return true;
@@ -29,10 +35,16 @@ public class ItemUtil {
     //アイテムを与えることが可能か調べる
     public static boolean ableGive(Inventory inventory, ItemStack... items) {
         if (items == null) return true;
-        if (items.length <= Arrays.stream(getContents(inventory)).filter(ItemUtil::isAir).count()) return true;
+        return ableGive(getContents(inventory), items);
+    }
+
+    //アイテムを与えることが可能か調べる
+    public static boolean ableGive(ItemStack[] contents, ItemStack... items) {
+        if (items == null) return true;
+        if (items.length <= Arrays.stream(contents).filter(ItemUtil::isAir).count()) return true;
         HashMap<ItemStack, Integer> give = new HashMap<>();
         Arrays.stream(items).forEach(item -> give.put(item, containsCount(items, item)));
-        give.replaceAll((i, v) -> give.get(i) - capacityCount(getContents(inventory), i));
+        give.replaceAll((i, v) -> give.get(i) - capacityCount(contents, i));
         int needslot = give.keySet().stream()
                 .filter(item -> give.get(item) > 0)
                 .mapToInt(item -> {
@@ -40,19 +52,25 @@ public class ItemUtil {
                     if (give.get(item) % item.getType().getMaxStackSize() != 0) size++;
                     return size;
                 }).sum();
-        int emptyslot = (int) Arrays.stream(getContents(inventory)).filter(Objects::isNull).count();
+        int emptyslot = (int) Arrays.stream(contents).filter(Objects::isNull).count();
         return needslot <= emptyslot;
     }
 
     //アイテムを含んでいるか調べる
     public static boolean contains(Inventory inventory, ItemStack... items) {
         if (items == null) return true;
+        return contains(getContents(inventory), items);
+    }
+
+    //アイテムを含んでいるか調べる
+    public static boolean contains(ItemStack[] contents, ItemStack... items) {
+        if (items == null) return true;
         HashMap<ItemStack, Integer> need = new HashMap<>();
         Arrays.stream(items).filter(Objects::nonNull).forEach(item -> need.put(item, containsCount(items, item)));
         HashMap<ItemStack, Integer> has = new HashMap<>();
-        if (need.keySet().stream().anyMatch(item -> Arrays.stream(getContents(inventory)).noneMatch(i -> ItemNormalizer.isSimilar(item, i))))
+        if (need.keySet().stream().anyMatch(item -> Arrays.stream(contents).noneMatch(i -> ItemNormalizer.isSimilar(item, i))))
             return false;
-        need.keySet().forEach(item -> has.put(item, containsCount(getContents(inventory), item)));
+        need.keySet().forEach(item -> has.put(item, containsCount(contents, item)));
         return need.keySet().stream().noneMatch(item -> has.get(item) < need.get(item));
     }
 
@@ -301,7 +319,9 @@ public class ItemUtil {
     }
 
     public static ItemStack getWhitePanel() {
-        return getNamedItem(getColoredItem("WHITE_STAINED_GLASS_PANE"), ChatColor.WHITE + "");
+        if (whitePanel == null)
+            whitePanel = getNamedItem(getColoredItem("WHITE_STAINED_GLASS_PANE"), ChatColor.WHITE + "");
+        return whitePanel.clone();
     }
 
     public static ItemStack getColoredItem(String material) {

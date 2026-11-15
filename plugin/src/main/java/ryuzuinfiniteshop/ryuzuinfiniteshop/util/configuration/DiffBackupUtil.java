@@ -6,7 +6,10 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -50,7 +53,31 @@ public final class DiffBackupUtil {
             String oldContent = target.isFile() ? Files.readString(target.toPath(), StandardCharsets.UTF_8) : "";
             appendDiff(backupFile, label, oldContent, newContent);
         }
-        Files.writeString(target.toPath(), newContent, StandardCharsets.UTF_8);
+        writeAtomically(target, newContent);
+    }
+
+    /**
+     * Replaces {@code target} in one step, so a write interrupted (or a crash) leaves either the old or the new
+     * content, never a half written file.
+     */
+    private static void writeAtomically(File target, String content) throws IOException {
+        Path path = target.toPath();
+        Path parent = path.getParent();
+        if (parent == null) {
+            Files.writeString(path, content, StandardCharsets.UTF_8);
+            return;
+        }
+        Path temp = Files.createTempFile(parent, target.getName(), ".tmp");
+        try {
+            Files.writeString(temp, content, StandardCharsets.UTF_8);
+            try {
+                Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temp);
+        }
     }
 
     /** Records the removal of {@code target} (its whole content as deleted lines) in {@code backupFile}. */

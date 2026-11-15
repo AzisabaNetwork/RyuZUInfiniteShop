@@ -10,6 +10,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.Shop;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.shops.ShopType;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.ShopTrade;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.TradeOption;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.ObjectItems;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.DiffBackupUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.FileUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
@@ -17,6 +18,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.JavaUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.BiPredicate;
 
 public class TradeUtil {
     public static boolean isAvailableTrade(Inventory inv, int slot, ShopType type) {
@@ -112,56 +114,52 @@ public class TradeUtil {
         return new ShopTrade(ItemUtil.toItemStackArrayFromString(NBTUtil.getNMSStringTag(item, "Give" + 0)), ItemUtil.toItemStackArrayFromString(NBTUtil.getNMSStringTag(item, "Take" + 0)));
     }
 
-    public static LinkedHashMap<ShopTrade, Shop> getTradesFromGive(ItemStack item, ShopMode mode) {
+    /**
+     * Searches every searchable shop (or every shop in edit mode) for a trade with a matching item.
+     * <p>
+     * The search runs on an async thread while a reload may rewrite the registry and trade lists, so the
+     * registry is snapshotted and each trade list is walked by index: a concurrent reload can neither throw
+     * {@link java.util.ConcurrentModificationException} nor stop the search half way.
+     *
+     * @param mode     shop mode; {@link ShopMode#EDIT} searches shops that are not searchable as well
+     * @param giveSide whether to match the items the trade gives ({@code true}) or takes
+     * @param matches  tests the item at {@code index} of the trade's items
+     */
+    private static LinkedHashMap<ShopTrade, Shop> searchTrades(ShopMode mode, boolean giveSide,
+                                                               BiPredicate<ObjectItems, Integer> matches) {
         LinkedHashMap<ShopTrade, Shop> trades = new LinkedHashMap<>();
-        ShopUtil.getShops().values().forEach(shop -> {
-            if (shop.isSearchable() || mode.equals(ShopMode.EDIT))
-                shop.getTrades().forEach(trade -> Arrays.stream(trade.getGiveItems()).forEach(give -> {
-                                             if (give.isSimilar(item))
-                                                 trades.put(trade, shop);
-                                         })
-                );
-        });
+        for (Shop shop : new ArrayList<>(ShopUtil.getShops().values())) {
+            if (!shop.isSearchable() && !mode.equals(ShopMode.EDIT)) continue;
+            List<ShopTrade> shopTrades = shop.getTrades();
+            for (int t = 0; t < shopTrades.size(); t++) {
+                ShopTrade trade = shopTrades.get(t);
+                if (trade == null) continue;
+                ObjectItems items = giveSide ? trade.getGiveData() : trade.getTakeData();
+                for (int i = 0; i < items.size(); i++) {
+                    if (matches.test(items, i)) {
+                        trades.put(trade, shop);
+                        break;
+                    }
+                }
+            }
+        }
         return trades;
+    }
+
+    public static LinkedHashMap<ShopTrade, Shop> getTradesFromGive(ItemStack item, ShopMode mode) {
+        return searchTrades(mode, true, (items, i) -> items.isSimilar(i, item));
     }
 
     public static LinkedHashMap<ShopTrade, Shop> getTradesFromTake(ItemStack item, ShopMode mode) {
-        LinkedHashMap<ShopTrade, Shop> trades = new LinkedHashMap<>();
-        ShopUtil.getShops().values().forEach(shop -> {
-            if (shop.isSearchable() || mode.equals(ShopMode.EDIT))
-                shop.getTrades().forEach(trade -> Arrays.stream(trade.getTakeItems()).forEach(take -> {
-                                             if (take.isSimilar(item))
-                                                 trades.put(trade, shop);
-                                         })
-                );
-        });
-        return trades;
+        return searchTrades(mode, false, (items, i) -> items.isSimilar(i, item));
     }
 
     public static LinkedHashMap<ShopTrade, Shop> getTradesFromGiveByDisplayName(String name, ShopMode mode) {
-        LinkedHashMap<ShopTrade, Shop> trades = new LinkedHashMap<>();
-        ShopUtil.getShops().values().forEach(shop -> {
-            if (shop.isSearchable() || mode.equals(ShopMode.EDIT))
-                shop.getTrades().forEach(trade -> Arrays.stream(trade.getGiveItems()).forEach(take -> {
-                                             if (JavaUtil.containsIgnoreCase(take.getItemMeta().getDisplayName(), name))
-                                                 trades.put(trade, shop);
-                                         })
-                );
-        });
-        return trades;
+        return searchTrades(mode, true, (items, i) -> JavaUtil.containsIgnoreCase(items.getDisplayName(i), name));
     }
 
     public static LinkedHashMap<ShopTrade, Shop> getTradesFromTakeByDisplayName(String name, ShopMode mode) {
-        LinkedHashMap<ShopTrade, Shop> trades = new LinkedHashMap<>();
-        ShopUtil.getShops().values().forEach(shop -> {
-            if (shop.isSearchable() || mode.equals(ShopMode.EDIT))
-                shop.getTrades().forEach(trade -> Arrays.stream(trade.getTakeItems()).forEach(take -> {
-                                             if (JavaUtil.containsIgnoreCase(take.getItemMeta().getDisplayName(), name))
-                                                 trades.put(trade, shop);
-                                         })
-                );
-        });
-        return trades;
+        return searchTrades(mode, false, (items, i) -> JavaUtil.containsIgnoreCase(items.getDisplayName(i), name));
     }
 
     public static List<ShopTrade> convertTradesToList(HashMap<String, String> trades) {

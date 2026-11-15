@@ -310,7 +310,13 @@ public class Shop {
         removeShop();
     }
 
+    /**
+     * Trades on the given trade page (1-based). Returns an empty list for a page past the end.
+     *
+     * @throws IndexOutOfBoundsException when {@code page} is less than 1
+     */
     public List<ShopTrade> getTrades(int page) {
+        if (page < 1) throw new IndexOutOfBoundsException("Trade page must be 1-based, got " + page);
         List<ShopTrade>[] trades = JavaUtil.splitList(getTrades(), type.getLimitSize());
         if (trades.length == page - 1) return new ArrayList<>();
         return trades[page - 1];

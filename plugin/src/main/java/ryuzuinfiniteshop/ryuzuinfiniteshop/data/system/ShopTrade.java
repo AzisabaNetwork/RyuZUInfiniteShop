@@ -29,7 +29,6 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VaultHandler;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.effect.SoundUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ShopUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +42,11 @@ public class ShopTrade {
     public static final HashMap<UUID, TradeOption> tradeOptions = new HashMap<>();
     private static final Random random = new Random();
     private static final AtomicBoolean optionsDirty = new AtomicBoolean(true);
+    /**
+     * Reusable panel item, built on first use rather than during class initialisation: creating an ItemStack
+     * needs a running server. {@link #getFilter()} hands out copies so callers can mutate them freely.
+     */
+    private static ItemStack filter;
 
     public static boolean consumeOptionsDirty() {
         return optionsDirty.getAndSet(false);
@@ -119,6 +123,14 @@ public class ShopTrade {
 
     public ItemStack[] getGiveItems() {
         return giveData.toItemStacks();
+    }
+
+    public ObjectItems getGiveData() {
+        return giveData;
+    }
+
+    public ObjectItems getTakeData() {
+        return takeData;
     }
 
     public ItemStack[] getTakeItems() {
@@ -209,7 +221,9 @@ public class ShopTrade {
     }
 
     public static ItemStack getFilter() {
-        return ItemUtil.getNamedItem(ItemUtil.getColoredItem("BLACK_STAINED_GLASS_PANE"), ChatColor.BLACK + "");
+        if (filter == null)
+            filter = ItemUtil.getNamedItem(ItemUtil.getColoredItem("BLACK_STAINED_GLASS_PANE"), ChatColor.BLACK + "");
+        return filter.clone();
     }
 
     public ItemStack getFilter(ShopMode mode) {
@@ -220,25 +234,22 @@ public class ShopTrade {
         return mode.equals(ShopMode.EDIT) ? getSettingsFilterNoData() : getFilter();
     }
 
-    public ItemStack getFilter(String id, Player player) {
-        Shop shop = ShopUtil.getShop(id);
-        String page = String.valueOf(shop.getPage(this));
-        TradeResult result = getResult(player, shop);
+    public ItemStack getFilter(Shop shop, int page, Player player, TradeResult result) {
         boolean isAdmin = player.hasPermission("sis.op");
         return NBTUtil.setNMSTag(
                 NBTUtil.setNMSTag(
                         ItemUtil.getNamedItem(
                                 DisplayPanelConfig.getPanel(result).getItemStack(),
-                                ChatColor.GREEN + LanguageKey.ITEM_TRADE_WITH.getMessage(ShopUtil.getShop(id).getDisplayNameOrElseNone()),
+                                ChatColor.GREEN + LanguageKey.ITEM_TRADE_WITH.getMessage(shop.getDisplayNameOrElseNone()),
                                 false,
-                                ChatColor.YELLOW + LanguageKey.INVENTORY_PAGE.getMessage(page),
+                                ChatColor.YELLOW + LanguageKey.INVENTORY_PAGE.getMessage(String.valueOf(page)),
                                 isAdmin ? (ChatColor.YELLOW + LanguageKey.ITEM_EDITOR_IS_SEARCHABLE.getMessage(shop.isSearchable() ? ChatColor.GREEN + LanguageKey.ITEM_EDITOR_SEARCH_ENABLED.getMessage() : ChatColor.RED + LanguageKey.ITEM_EDITOR_SEARCH_DISABLED.getMessage())) : null,
                                 isAdmin ? (ChatColor.YELLOW + LanguageKey.ITEM_IS_LOCKED.getMessage(shop.isLock() ? ChatColor.RED + LanguageKey.ITEM_EDITOR_LOCKED.getMessage() : ChatColor.GREEN + LanguageKey.ITEM_EDITOR_UNLOCKED.getMessage())) : null,
                                 ChatColor.GREEN + LanguageKey.ITEM_TRADE_WINDOW_OPEN.getMessage(),
                                 isAdmin ? ChatColor.GREEN + LanguageKey.ITEM_EDIT_WINDOW_OPEN.getMessage() : null
                         ),
-                        "Shop", id
-                ), "Page", page
+                        "Shop", shop.getID()
+                ), "Page", String.valueOf(page)
         );
     }
 
@@ -303,10 +314,6 @@ public class ShopTrade {
         return getTradeItems(type, getFilter(ShopMode.EDIT));
     }
 
-    public ItemStack[] getTradeItems(ShopType type, String id, Player player) {
-        return getTradeItems(type, getFilter(id, player));
-    }
-
     public ItemStack[] getTradeItems(ShopType type, ItemStack filter) {
         ItemStack[] items = new ItemStack[9];
         int filterSlot = type.equals(ShopType.SixtoTwo) ? 6 : 4;
@@ -325,14 +332,15 @@ public class ShopTrade {
     }
 
     public TradeResult getResult(Player p) {
-        TradeResult result = TradeResult.Success;
+        Inventory inv = p.getInventory();
+        ItemStack[] contents = ItemUtil.getContents(inv);
 
-        if (!affordItem(p)) result = TradeResult.NotEnoughItems;
-        else if (!affordMoney(p)) result = TradeResult.NotEnoughMoney;
-        else if (isError()) result = TradeResult.Error;
-        else if (isLimited(p)) result = TradeResult.Limited;
-        else if (!hasEnoughSpace(p)) result = TradeResult.Full;
-        return result;
+        if (!ItemUtil.contains(contents, getTakeItems())) return TradeResult.NotEnoughItems;
+        if (!affordMoney(p)) return TradeResult.NotEnoughMoney;
+        if (isError()) return TradeResult.Error;
+        if (isLimited(p)) return TradeResult.Limited;
+        if (!ItemUtil.ableGive(contents, getGiveItems())) return TradeResult.Full;
+        return TradeResult.Success;
     }
 
     public TradeResult getResult(Player p, Shop shop) {
@@ -386,16 +394,6 @@ public class ShopTrade {
         playResultEffect(p, result);
         saveTradeOption();
         return resultTime;
-    }
-
-    //アイテムを追加できるかチェックする
-    private boolean hasEnoughSpace(Player p) {
-        return ItemUtil.ableGive(p.getInventory(), getGiveItems());
-    }
-
-    //アイテムを所持しているか確認する
-    private boolean affordItem(Player p) {
-        return ItemUtil.contains(p.getInventory(), getTakeItems());
     }
 
     private boolean affordMoney(Player p) {

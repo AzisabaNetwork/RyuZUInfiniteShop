@@ -7,7 +7,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.EquipmentSlot;
-import ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.ObjectItems;
+import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.*;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.entity.EntityNBTBuilder;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.entity.EntityUtil;
@@ -128,13 +128,15 @@ public final class ShopNPCManager {
             Entity npc = getEntity(shop);
             if (npc instanceof LivingEntity) {
                 LivingEntity living = (LivingEntity) npc;
+                ItemStack[] equipment = shop.equipments.toItemStacks();
                 for (EquipmentSlot slot : EquipmentUtil.getEquipmentsSlot().values()) {
-                    applyEquipmentSlot(living, slot, shop.equipments);
+                    applyEquipmentSlot(living, slot, equipment);
                 }
             }
         } else if (CitizensHandler.isLoaded() && CitizensHandler.isCitizensNPC(shop.uuid)) {
+            ItemStack[] equipment = shop.equipments.toItemStacks();
             for (EquipmentSlot slot : EquipmentUtil.getEquipmentsSlot().values()) {
-                CitizensHandler.setEquipment(shop.uuid, slot, shop.equipments.toItemStacks()[slot.ordinal()]);
+                CitizensHandler.setEquipment(shop.uuid, slot, equipment[slot.ordinal()]);
             }
             CitizensHandler.respawn(shop);
         }
@@ -192,25 +194,25 @@ public final class ShopNPCManager {
         }
     }
 
-    private static void applyEquipmentSlot(LivingEntity living, EquipmentSlot slot, ObjectItems equipments) {
+    private static void applyEquipmentSlot(LivingEntity living, EquipmentSlot slot, ItemStack[] equipments) {
         switch (slot) {
             case HAND:
-                living.getEquipment().setItemInMainHand(equipments.toItemStacks()[slot.ordinal()]);
+                living.getEquipment().setItemInMainHand(equipments[slot.ordinal()]);
                 break;
             case OFF_HAND:
-                living.getEquipment().setItemInOffHand(equipments.toItemStacks()[slot.ordinal()]);
+                living.getEquipment().setItemInOffHand(equipments[slot.ordinal()]);
                 break;
             case FEET:
-                living.getEquipment().setBoots(equipments.toItemStacks()[slot.ordinal()]);
+                living.getEquipment().setBoots(equipments[slot.ordinal()]);
                 break;
             case LEGS:
-                living.getEquipment().setLeggings(equipments.toItemStacks()[slot.ordinal()]);
+                living.getEquipment().setLeggings(equipments[slot.ordinal()]);
                 break;
             case CHEST:
-                living.getEquipment().setChestplate(equipments.toItemStacks()[slot.ordinal()]);
+                living.getEquipment().setChestplate(equipments[slot.ordinal()]);
                 break;
             case HEAD:
-                living.getEquipment().setHelmet(equipments.toItemStacks()[slot.ordinal()]);
+                living.getEquipment().setHelmet(equipments[slot.ordinal()]);
                 break;
         }
     }
