@@ -70,6 +70,7 @@ public class FileUtil {
             LanguageConfig.load();
             LegacyMythicItemMatcher.invalidate();
             CurrentMythicItemMatcher.invalidate();
+            VanillaMythicItems.invalidate();
             ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.MythicItem.clearCache();
             new ReloadSession(viewer, new ArrayList<>(ShopUtil.getShops().values())).start();
             return true;

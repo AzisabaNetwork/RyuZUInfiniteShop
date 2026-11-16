@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.config.Config;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VanillaMythicItems;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemNormalizer;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
@@ -86,7 +87,12 @@ public class ObjectItems {
     //return MythicItems or ItemStack
     //from MythicItems or ItemStack
     private static Object convert(Object object) {
+        // MMIDs whose definition is a plain vanilla item are kept as that vanilla item (VanillaMythicItems)
+        if (object instanceof MythicItem mythicItem && VanillaMythicItems.isVanillaDefinition(mythicItem.getId()))
+            return VanillaMythicItems.vanillaOf(mythicItem.convertItemStack());
         if (object instanceof ItemStack item && !ItemUtil.isAir(item)) {
+            ItemStack plain = VanillaMythicItems.revert(item);
+            if (plain != null) return plain;
             Object resolved = MythicItem.resolve(item);
             if (resolved != null) return resolved;
         }

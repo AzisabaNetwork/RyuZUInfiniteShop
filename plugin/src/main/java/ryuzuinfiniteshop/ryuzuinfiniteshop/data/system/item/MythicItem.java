@@ -10,6 +10,7 @@ import ryuzuinfiniteshop.ryuzuinfiniteshop.config.LanguageKey;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.CurrentMythicItemMatcher;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.LegacyMythicItemMatcher;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.MythicInstanceProvider;
+import ryuzuinfiniteshop.ryuzuinfiniteshop.util.configuration.VanillaMythicItems;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.ItemUtil;
 import ryuzuinfiniteshop.ryuzuinfiniteshop.util.inventory.NBTUtil;
 
@@ -62,7 +63,8 @@ public class MythicItem implements ConfigurationSerializable {
      *     <li>the 1.15.2 item definitions in {@code legacy-mythic-items/} ({@link LegacyMythicItemMatcher});</li>
      *     <li>the items of the running MythicMobs ({@link CurrentMythicItemMatcher}).</li>
      * </ol>
-     * Not replaced: IDs the current MythicMobs does not have, IDs listed in {@code MythicItemExcludedIDs}, and items
+     * Not replaced: IDs the current MythicMobs does not have, IDs listed in {@code MythicItemExcludedIDs}, IDs whose
+     * current definition is a plain vanilla item ({@link VanillaMythicItems}), and items
      * whose lore text differs from the item the current MythicMobs generates (e.g. Lv2 or per-item stats kept in the
      * lore), since saving them by MMID would lose that lore.
      *
@@ -76,6 +78,8 @@ public class MythicItem implements ConfigurationSerializable {
         if (id == null) id = LegacyMythicItemMatcher.findId(item);
         if (id == null) id = CurrentMythicItemMatcher.findId(item);
         if (id == null || id.isBlank() || Config.isMythicItemExcluded(id)) return null;
+        // A definition that is just a vanilla item: keep the (vanilla) item, see VanillaMythicItems
+        if (VanillaMythicItems.isVanillaDefinition(id)) return null;
         // Also false when the current MythicMobs has no item with this ID.
         if (!CurrentMythicItemMatcher.hasSameLoreAsCurrent(item, id)) return null;
         return new MythicItem(id, item.getAmount());
@@ -108,6 +112,10 @@ public class MythicItem implements ConfigurationSerializable {
         }
         if (Config.isMythicItemExcluded(id)) {
             result.add("=> kept as an item (" + id + " is in MythicItemExcludedIDs)");
+            return result;
+        }
+        if (VanillaMythicItems.isVanillaDefinition(id)) {
+            result.add("=> kept as a plain vanilla item (" + id + " generates a vanilla item; MythicMobs tags are removed)");
             return result;
         }
         java.util.Optional<java.util.List<String>> lore = CurrentMythicItemMatcher.currentPlainLore(id);
