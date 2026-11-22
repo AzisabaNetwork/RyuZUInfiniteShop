@@ -1,62 +1,39 @@
-# Gradle
+# Gradle / Kotlin
 .gradle/
 build/
-api/build/
-plugin/build/
-commandlib/build/
-v16older/build/
-v16newer/build/
-v21newer/build/
+.kotlin/
 !gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
 
 # Test outputs
 **/test-results/
-**/TEST-*.xml
 
-# Kotlin
-.kotlin/
+# Local Paper servers for manual testing (run-paper etc.)
+run/
 
-# Temporary build artifacts
-temp-jar/
-temp-jar2/
-temp-jar3/
+# Leftovers of the 1.x multi-module layout (branch ver/1.21.11)
+v16older/
+v16newer/
+temp-jar*/
 
-# IntelliJ IDEA
+# IDEs
 .idea/
-*.iws
 *.iml
+*.iws
 *.ipr
-
-# Eclipse
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-# NetBeans
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-# VS Code
 .vscode/
+.classpath
+.project
+.settings/
+bin/
+!**/src/**/bin/
 
-# Mac OS
-.DS_Store
-
-# Windows
-Thumbs.db
-*.log
-
-# Copilot agent
+# AI agent working folders
 .agents/
+.junie/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
