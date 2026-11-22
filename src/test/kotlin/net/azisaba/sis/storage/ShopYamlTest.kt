@@ -50,6 +50,7 @@ class ShopYamlTest {
         searchable = false,
         nameVisible = false,
         lookAtPlayer = true,
+        invisible = true,
     )
 
     @Test
@@ -64,6 +65,7 @@ class ShopYamlTest {
         assertEquals(shop.searchable, back.searchable)
         assertEquals(shop.nameVisible, back.nameVisible)
         assertEquals(shop.lookAtPlayer, back.lookAtPlayer)
+        assertEquals(shop.invisible, back.invisible)
         assertEquals(shop.trades, back.trades)
     }
 

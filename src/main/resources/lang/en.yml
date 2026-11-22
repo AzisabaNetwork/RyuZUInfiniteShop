@@ -4,6 +4,8 @@ prefix: "<dark_gray>[<green>SIS</green>]</dark_gray> "
 shop:
   unnamed: "<gray>Shop <id>"
   no-trades: "<red>This shop has no trades yet"
+  no-trades-admin: "<gray>Sneak + right-click or /sis edit <id> to add trades"
+  locked: "<red>This shop is locked"
 
 status:
   ready: "<green>Available"
@@ -58,11 +60,17 @@ trade:
   chance: "<yellow>Success chance: <white><chance>%"
   from-shop: "<gray>Shop: </gray><shop> <dark_gray>(<location>)"
   list-hint:
-    - "<dark_gray>Click: show details"
-    - "<dark_gray>Shift-click: trade once"
+    - "<dark_gray>Click: show details / Right-click: trade once"
+    - "<dark_gray>Shift-click: 8x / Middle-click: 64x"
+    - "<dark_gray>Q: trade as many as possible"
+  search-cost-hint:
+    - "<dark_gray>Click: find trades that give this item"
+  search-reward-hint:
+    - "<dark_gray>Click: find trades that take this item"
   arrow-hint:
     - ""
-    - "<dark_gray>Click: trade once"
+    - "<dark_gray>Click: once / Shift-click: 8x"
+    - "<dark_gray>Middle-click: 64x / Q: as many as possible"
   list-hint-view:
     - "<dark_gray>Click: show details"
 
@@ -86,8 +94,8 @@ gui:
     - "<dark_gray>Also /sis settings"
   back: "<white>Back"
   close: "<white>Close"
-  yes: "<green>yes"
-  no: "<red>no"
+  answer-yes: "<green>yes"
+  answer-no: "<red>no"
 
 search:
   open-shop: "<green>Open this shop"
@@ -98,6 +106,8 @@ search:
   empty-query: "<red>Enter a keyword or search with the item in your hand"
   no-results: "<red>Nothing found"
   found: "<green>Found <count> trades"
+  found-sources: "<green>Trades that give </green><item><green>: <count>"
+  found-uses: "<green>Trades that take </green><item><green>: <count>"
 
 list:
   title: "Shops"
@@ -133,6 +143,7 @@ editor:
     - "<gray>Name: </gray><name>"
     - "<gray>Locked: <locked>"
     - "<gray>Searchable: <searchable>"
+    - "<gray>Invisible NPC: <invisible>"
   npc-kind: "<gold>NPC kind"
   npc-kind-lore:
     - "<gray>Now: <white><kind>"
@@ -226,16 +237,18 @@ dialog:
     body: "<gray>These apply to you only"
     pay-from-boxes: "Pay with items in my Storage Boxes"
     rewards-into-boxes: "Put received items into a Storage Box of the same item"
+    trade-from-list: "Trade from the list too (right-click, shift, wheel, Q)"
     tutorial: "Show how shops work"
   cancel: "Cancel"
   shop:
     title: "Shop settings (<id>)"
     body: "<gray>The name may use MiniMessage (e.g. <green>&lt;green&gt;Weapons</green>)"
     name: "Name"
-    locked: "Locked (players can look but not trade)"
+    locked: "Locked (only players with sis.locked can open it)"
     searchable: "Show in search and shop list"
     name-visible: "Show the name above the NPC"
     look-at-player: "Look at nearby players"
+    invisible: "Invisible NPC (only its name and equipment show)"
     yaw: "Facing (degrees)"
   npc:
     title: "NPC kind"
@@ -269,7 +282,7 @@ dialog:
     description: "Description (shown to players)"
   confirm:
     title: "Confirm"
-    yes: "Do it"
+    run: "Do it"
   search:
     title: "Search trades"
     body: "<gray>Part of an item name, NPC name or MMID"
@@ -287,7 +300,7 @@ dialog:
     body:
       - "The left side lists the trades, the right side shows the selected trade in full."
       - "Click a trade to select it, then use \"1x / 8x / 64x / as many as possible\" below."
-      - "Shift-click a trade in the list to trade once right away."
+      - "In the list: right-click trades once, shift-click 8x, middle-click 64x, Q as many as possible."
       - "Trades with many entries show a bundle: hover it to see everything."
       - "The spyglass below searches the trades of every shop."
       - "Left-click outside the window for the previous page, right-click for the next."

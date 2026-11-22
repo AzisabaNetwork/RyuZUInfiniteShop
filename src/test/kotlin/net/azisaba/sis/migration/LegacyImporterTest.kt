@@ -59,7 +59,7 @@ class LegacyImporterTest {
               Options:
                 DisplayName: §aSpringEvent
                 EntityType: VILLAGER
-                Invisible: false
+                Invisible: true
                 Equipments: []
                 Adult: false
                 Profession: FARMER
@@ -120,6 +120,7 @@ class LegacyImporterTest {
         assertEquals("<green>SpringEvent", shop.name)
         assertTrue(shop.locked)
         assertTrue(!shop.searchable)
+        assertTrue(shop.invisible)
         assertEquals(EntityType.VILLAGER, (shop.npc as NpcSpec.Vanilla).type)
 
         val trade = shop.trades.single()
@@ -148,6 +149,31 @@ class LegacyImporterTest {
         assertTrue(File(dir, "legacy-1.x/options.yml").exists())
         assertTrue(File(dir, "shops/world_10_64_-3.yml").exists())
         assertEquals(null, LegacyImporter(sis).autoMigrate(dir))
+    }
+
+    @Test
+    fun `shops migrated before invisible existed get it from the 1x files`() {
+        // State after a migration by an older 2.0 build: 1.x files in legacy-1.x, 2.x files without invisible
+        writeLegacy(dir)
+        sis.repository.close()
+        sis.repository = ShopRepository(dir, Logger.getLogger("test")) { 0 }
+        LegacyImporter(sis).autoMigrate(dir)!!
+        val file = File(dir, "shops/world_10_64_-3.yml")
+        file.writeText(file.readLines().filterNot { it.startsWith("invisible:") }.joinToString("\n") + "\n")
+        // ...and edited since: the edit must survive
+        file.writeText(file.readText().replace("name: <green>SpringEvent", "name: edited"))
+
+        assertEquals(listOf("world_10_64_-3"), LegacyImporter(sis).backfillFlags(dir))
+        val shop = sis.repository.load("world_10_64_-3")
+        assertTrue(shop.locked, "1.x Lock stays the lock")
+        assertTrue(shop.invisible)
+        assertEquals("edited", shop.name)
+        assertEquals(1, shop.trades.size)
+
+        // only once
+        val text = file.readText()
+        assertEquals(emptyList(), LegacyImporter(sis).backfillFlags(dir))
+        assertEquals(text, file.readText())
     }
 
     @Test

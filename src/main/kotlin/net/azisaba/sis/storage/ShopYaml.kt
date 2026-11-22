@@ -69,6 +69,7 @@ object ShopYaml {
         out.set("searchable", shop.searchable)
         out.set("name-visible", shop.nameVisible)
         out.set("look-at-player", shop.lookAtPlayer)
+        out.set("invisible", shop.invisible)
         out.set("trades", shop.trades.map(::tradeToMap))
     }
 
@@ -130,6 +131,7 @@ object ShopYaml {
             searchable = yaml.getBoolean("searchable", true),
             nameVisible = yaml.getBoolean("name-visible", true),
             lookAtPlayer = yaml.getBoolean("look-at-player", false),
+            invisible = yaml.getBoolean("invisible", false),
         )
     }
 

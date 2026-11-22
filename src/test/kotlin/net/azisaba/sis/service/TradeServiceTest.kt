@@ -229,10 +229,10 @@ class TradeServiceTest {
     fun `player settings are kept in the database`() {
         val settings = PlayerSettingsService(db)
         val id = player.uniqueId
-        settings.set(id, PlayerSettings(payFromBoxes = false, rewardsIntoBoxes = true, tutorialHidden = true))
+        settings.set(id, PlayerSettings(payFromBoxes = false, rewardsIntoBoxes = true, tradeFromList = false, tutorialHidden = true))
         settings.unload(id)
         settings.loadBlocking(id)
-        assertEquals(PlayerSettings(payFromBoxes = false, rewardsIntoBoxes = true, tutorialHidden = true), settings[id])
+        assertEquals(PlayerSettings(payFromBoxes = false, rewardsIntoBoxes = true, tradeFromList = false, tutorialHidden = true), settings[id])
         settings.set(id, PlayerSettings())
         settings.loadBlocking(id)
         assertEquals(PlayerSettings(), settings[id])

@@ -2,6 +2,7 @@ package net.azisaba.sis.gui
 
 import net.azisaba.sis.Sis
 import net.azisaba.sis.config.Messages
+import net.azisaba.sis.dialog.SearchTarget
 import net.azisaba.sis.model.ResetPeriod
 import net.azisaba.sis.model.Shop
 import net.azisaba.sis.model.Trade
@@ -11,6 +12,7 @@ import net.azisaba.sis.service.TradeStatus
 import net.kyori.adventure.text.Component
 import org.bukkit.Sound
 import org.bukkit.entity.Player
+import org.bukkit.event.inventory.ClickType
 import org.bukkit.inventory.ItemStack
 import java.time.format.DateTimeFormatter
 
@@ -37,6 +39,8 @@ class TradeMenu(
     private val fixedShop: Shop?,
     private val results: List<Pair<Shop, Trade>> = emptyList(),
     private val adminView: Boolean = false,
+    /** Trades work even when the shop is locked (opened by /sis open, or by someone who may pass locks). */
+    private val unlocked: Boolean = adminView,
 ) : Menu(viewer, 6) {
     private var page = 0
     override val pageButtons = 45 to 47
@@ -69,12 +73,13 @@ class TradeMenu(
                 continue
             }
             val (shop, trade) = pair
-            val status = sis.trades.evaluate(viewer, shop, trade, 1, bypassLock = adminView).status
+            val status = sis.trades.evaluate(viewer, shop, trade, 1, bypassLock = unlocked).status
             val isSelected = selected?.second?.id == trade.id
             val summary = summaryLore(shop, trade, status)
             val onClick: (Click) -> Unit = { click ->
                 selected = pair
-                if (click.shift && canTrade(shop)) buy(pair, 1) else {
+                val times = if (tradeFromList) bulkTimes(click, leftTrades = false) else null
+                if (times != null && canTrade(shop)) buy(pair, times) else {
                     viewer.playSound(viewer.location, Sound.UI_BUTTON_CLICK, 0.5f, 1.4f)
                     refresh()
                 }
@@ -82,7 +87,8 @@ class TradeMenu(
             slot(row * 9, previewSlot(trade.costs, summary), onClick)
             slot(row * 9 + 1, statusIcon(status, isSelected, summary), onClick)
             slot(row * 9 + 2, previewSlot(trade.rewards, summary), onClick)
-            slot(row * 9 + 3, if (isSelected) icons.icon("selected", Messages.get("trade.selected"), Messages.lines("trade.selected-lore")) else icons.filler("divider"), onClick)
+            val marker = if (isSelected) icons.icon("selected", Messages.get("trade.selected"), Messages.lines("trade.selected-lore") + listHints(shop)) else icons.filler("divider")
+            slot(row * 9 + 3, marker, onClick)
         }
         renderDetail()
         renderBottom()
@@ -119,7 +125,7 @@ class TradeMenu(
         if (fixedShop == null) lines += Messages.get("trade.from-shop", "shop" to sis.shops.displayName(shop), "location" to shop.location.describe())
         lines += Component.empty()
         lines += Messages.get("status.${status.name.lowercase()}")
-        lines += Messages.lines(if (canTrade(shop)) "trade.list-hint" else "trade.list-hint-view")
+        lines += listHints(shop)
         return lines
     }
 
@@ -150,31 +156,41 @@ class TradeMenu(
             return
         }
         val (shop, trade) = pair
-        fill(costSlots, trade.costs)
-        fill(rewardSlots, trade.rewards)
-        val status = sis.trades.evaluate(viewer, shop, trade, 1, bypassLock = adminView).status
+        fill(costSlots, trade.costs, cost = true)
+        fill(rewardSlots, trade.rewards, cost = false)
+        val status = sis.trades.evaluate(viewer, shop, trade, 1, bypassLock = unlocked).status
         // Like the villager's result slot: clicking trades once (or the villager says no).
         val tradable = canTrade(shop)
         val lore = optionLines(trade) + Messages.lines(if (tradable) "trade.arrow-hint" else "trade.list-hint-view")
-        slot(2 * 9 + 7, icons.icon("arrow", Messages.get("status.${status.name.lowercase()}"), lore)) {
-            if (tradable) buy(pair, 1) else fail()
+        slot(2 * 9 + 7, icons.icon("arrow", Messages.get("status.${status.name.lowercase()}"), lore)) { click ->
+            val times = bulkTimes(click, leftTrades = true) ?: return@slot
+            if (tradable) buy(pair, times) else fail()
         }
     }
 
-    private fun fill(slots: List<Int>, items: List<TradeEntry>) {
+    /**
+     * One side of the selected trade. Clicking an item searches every shop for it, like 1.x:
+     * a cost → where it can be obtained (trades giving it), a reward → what it is used for (trades taking it).
+     * Admins copy the item with a middle-click.
+     */
+    private fun fill(slots: List<Int>, items: List<TradeEntry>, cost: Boolean) {
         val icons = sis.icons
+        val canSearch = viewer.hasPermission("sis.search")
+        val admin = viewer.hasPermission("sis.admin")
         slots.forEachIndexed { i, s ->
-            val item = when {
-                i >= items.size -> icons.filler("empty-slot")
-                i == slots.lastIndex && items.size > slots.size -> icons.bundle(items.drop(i), Messages.get("trade.more", "count" to items.size - i))
-                else -> icons.entry(items[i])
+            if (i >= items.size) return@forEachIndexed slot(s, icons.filler("empty-slot"))
+            if (i == slots.lastIndex && items.size > slots.size) {
+                return@forEachIndexed slot(s, icons.bundle(items.drop(i), Messages.get("trade.more", "count" to items.size - i)))
             }
-            val entry = items.getOrNull(i)
-            // Staff copy items with a middle-click, as they did in 1.x
-            if (entry != null && viewer.hasPermission("sis.admin")) {
-                slot(s, item) { click -> if (click.type == org.bukkit.event.inventory.ClickType.MIDDLE) ItemCopy.toCursor(viewer, click.event, entry) }
-            } else {
-                slot(s, item)
+            val entry = items[i]
+            val searchable = canSearch && (entry is TradeEntry.Item || entry is TradeEntry.Mythic)
+            val item = icons.entry(entry)
+            if (searchable) item.addLore(Messages.lines(if (cost) "trade.search-cost-hint" else "trade.search-reward-hint"))
+            slot(s, item) { click ->
+                when {
+                    click.type == ClickType.MIDDLE && admin -> ItemCopy.toCursor(viewer, click.event, entry)
+                    (click.left || click.right) && searchable -> SearchMenus.byItem(sis, viewer, entry, findIn = if (cost) SearchTarget.REWARDS else SearchTarget.COSTS)
+                }
             }
         }
     }
@@ -215,11 +231,32 @@ class TradeMenu(
         }
     }
 
+    /**
+     * How many times a click trades, with the keys of 1.x: shift = 8, wheel = 64, Q (drop) = as many as possible.
+     * A plain left click trades once on the result arrow ([leftTrades]); in the list it selects, and right-click
+     * trades once instead. Null = not a trading click.
+     */
+    private fun bulkTimes(click: Click, leftTrades: Boolean): Int? = when (click.type) {
+        ClickType.DROP, ClickType.CONTROL_DROP -> sis.trades.maxPerClick
+        ClickType.MIDDLE -> 64
+        ClickType.SHIFT_LEFT, ClickType.SHIFT_RIGHT -> 8
+        ClickType.RIGHT -> 1
+        ClickType.LEFT -> if (leftTrades) 1 else null
+        else -> null
+    }
+
+    /** How the list rows react to clicks (with the trading keys when the player's setting allows them). */
+    private fun listHints(shop: Shop): List<Component> =
+        Messages.lines(if (canTrade(shop) && tradeFromList) "trade.list-hint" else "trade.list-hint-view")
+
+    /** The player's setting: trading keys also work on the list. */
+    private val tradeFromList: Boolean get() = sis.settings[viewer.uniqueId].tradeFromList
+
     private fun canTrade(shop: Shop): Boolean = fixedShop != null || sis.config.allowRemoteTrade || viewer.hasPermission("sis.admin")
 
     private fun buy(pair: Pair<Shop, Trade>, times: Int) {
         val (shop, trade) = pair
-        val outcome = sis.trades.execute(viewer, shop, trade, times, bypassLock = adminView)
+        val outcome = sis.trades.execute(viewer, shop, trade, times, bypassLock = unlocked)
         report(outcome)
         refresh()
     }
@@ -253,6 +290,7 @@ class TradeMenu(
 
     private fun openShopOf(shop: Shop) {
         if (sis.config.allowRemoteTrade || viewer.hasPermission("sis.admin")) {
+            if (TradeMenu.refuseOpen(viewer, shop)) return
             TradeMenu(sis, viewer, shop, adminView = viewer.hasPermission("sis.admin")).also { it.parent = this }.open()
         } else {
             viewer.closeInventory()
@@ -264,6 +302,24 @@ class TradeMenu(
     private fun fail() = viewer.playSound(viewer.location, Sound.ENTITY_VILLAGER_NO, 0.7f, 1f)
 
     companion object {
+        /**
+         * Whether [player] must not open the trade screen of [shop]: it is locked for them, or it has no trades.
+         * Then it tells them why (with the villager's "no"). Admins are told how to reach the editor.
+         * [bypassLock]: opened for the player by `/sis open` (staff, command blocks), which 1.x allowed too.
+         */
+        fun refuseOpen(player: Player, shop: Shop, bypassLock: Boolean = false): Boolean {
+            if (!bypassLock && !shop.canOpen(player)) {
+                Messages.send(player, "shop.locked")
+                player.playSound(player.location, Sound.ENTITY_VILLAGER_NO, 0.7f, 1f)
+                return true
+            }
+            if (shop.trades.isNotEmpty()) return false
+            Messages.send(player, "shop.no-trades")
+            if (player.hasPermission("sis.admin")) Messages.send(player, "shop.no-trades-admin", "id" to shop.id)
+            player.playSound(player.location, Sound.ENTITY_VILLAGER_NO, 0.7f, 1f)
+            return true
+        }
+
         const val PER_PAGE = 5
         private val RESET_FORMAT = DateTimeFormatter.ofPattern("M/d HH:mm")
     }

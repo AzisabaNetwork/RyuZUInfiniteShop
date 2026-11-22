@@ -70,6 +70,10 @@ class SearchableInfiniteShop : JavaPlugin() {
             }
             .onFailure { logger.log(java.util.logging.Level.SEVERE, "Migration of 1.x data failed", it) }
 
+        runCatching { LegacyImporter(sis).backfillFlags(dataFolder) }
+            .onSuccess { if (it.isNotEmpty()) logger.info("Took the 1.x invisible setting into ${it.size} migrated shops: ${it.joinToString()}") }
+            .onFailure { logger.log(java.util.logging.Level.WARNING, "Could not take the 1.x invisible setting into migrated shops", it) }
+
         val loaded = sis.shops.load()
         logger.info("Loaded ${loaded.shops.size} shops" + if (loaded.failures.isNotEmpty()) " (${loaded.failures.size} failed)" else "")
         sis.counter.refreshGlobalBlocking()

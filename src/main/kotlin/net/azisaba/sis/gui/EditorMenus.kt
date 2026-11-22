@@ -63,9 +63,9 @@ class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sho
             }
         }
         val b = 36
-        slot(b, icons.icon("preview", Messages.get("editor.preview"))) { TradeMenu(sis, viewer, shop, adminView = true).also { it.parent = this }.open() }
+        slot(b, icons.icon("preview", Messages.get("editor.preview"))) { if (!TradeMenu.refuseOpen(viewer, shop)) TradeMenu(sis, viewer, shop, adminView = true).also { it.parent = this }.open() }
         slot(b + 1, icons.icon("settings", Messages.get("editor.settings"), Messages.lines("editor.settings-lore",
-            "name" to sis.shops.displayName(shop), "locked" to yesNo(shop.locked), "searchable" to yesNo(shop.searchable)))) {
+            "name" to sis.shops.displayName(shop), "locked" to yesNo(shop.locked), "searchable" to yesNo(shop.searchable), "invisible" to yesNo(shop.invisible)))) {
             sis.dialogs.shopSettings(viewer, this, shop)
         }
         slot(b + 2, icons.icon("npc-kind", Messages.get("editor.npc-kind"), Messages.lines("editor.npc-kind-lore", "kind" to NpcSpecs.format(shop.npc)))) {
@@ -105,7 +105,7 @@ class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sho
         slot(53, icons.icon("close", Messages.get("gui.close"))) { back() }
     }
 
-    private fun yesNo(value: Boolean): Component = Messages.get(if (value) "gui.yes" else "gui.no")
+    private fun yesNo(value: Boolean): Component = Messages.get(if (value) "gui.answer-yes" else "gui.answer-no")
 
     private fun tradeIcon(trade: Trade, index: Int): ItemStack {
         val icons = sis.icons

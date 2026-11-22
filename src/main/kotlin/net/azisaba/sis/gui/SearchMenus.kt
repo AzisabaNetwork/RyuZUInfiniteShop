@@ -57,6 +57,7 @@ class SearchIndex(private val sis: Sis) : ShopChangeListener {
         val result = ArrayList<Pair<Shop, Trade>>()
         for (shop in sis.shops.all) {
             if (!shop.searchable && !admin) continue
+            if (!shop.canOpen(viewer)) continue
             val shopHit = key.isNotEmpty() && sis.shops.plainName(shop).lowercase(Locale.ROOT).contains(key)
             for (trade in shop.trades) {
                 if (!sis.trades.isValid(trade) && !admin) continue
@@ -86,6 +87,35 @@ class SearchIndex(private val sis: Sis) : ShopChangeListener {
 object SearchMenus {
     lateinit var index: SearchIndex
 
+    /**
+     * Trades that have [entry]'s item among their costs ([findIn] = COSTS: what it is used for) or rewards
+     * (REWARDS: where it can be obtained). Opened by clicking an item in a trade, as in 1.x.
+     */
+    fun byItem(sis: Sis, player: Player, entry: TradeEntry, findIn: SearchTarget) {
+        val template = Items.template(entry) ?: return
+        val mythicId = (entry as? TradeEntry.Mythic)?.id ?: Items.mythicId(template)
+        val results = ArrayList<Pair<Shop, Trade>>()
+        for (shop in sis.shops.all) {
+            if (!shop.searchable && !player.hasPermission("sis.admin")) continue
+            if (!shop.canOpen(player)) continue
+            for (trade in shop.trades) {
+                val side = if (findIn == SearchTarget.COSTS) trade.costs else trade.rewards
+                val hit = side.any { e -> Items.matches(e, template) || (mythicId != null && e is TradeEntry.Mythic && e.id == mythicId) }
+                if (hit) results += shop to trade
+                if (results.size >= sis.config.maxSearchResults) break
+            }
+        }
+        if (results.isEmpty()) {
+            Messages.send(player, "search.no-results")
+            player.playSound(player.location, org.bukkit.Sound.ENTITY_VILLAGER_NO, 0.7f, 1f)
+            return
+        }
+        Messages.send(player, if (findIn == SearchTarget.COSTS) "search.found-uses" else "search.found-sources",
+            "count" to results.size, "item" to sis.icons.itemName(template))
+        val parent = player.openInventory.topInventory.holder as? Menu
+        TradeMenu(sis, player, null, results, adminView = player.hasPermission("sis.admin")).also { it.parent = parent }.open()
+    }
+
     fun run(sis: Sis, player: Player, keyword: String, target: SearchTarget, held: ItemStack?) {
         if (keyword.isEmpty() && held == null) {
             Messages.send(player, "search.empty-query")
@@ -109,7 +139,7 @@ class ShopListMenu(private val sis: Sis, viewer: Player) : Menu(viewer, 6) {
 
     private fun shops(): List<Shop> {
         val admin = viewer.hasPermission("sis.admin")
-        return sis.shops.all.filter { admin || it.searchable }.sortedBy { sis.shops.plainName(it) }
+        return sis.shops.all.filter { (admin || it.searchable) && it.canOpen(viewer) }.sortedBy { sis.shops.plainName(it) }
     }
 
     override fun title(): Component = Messages.get("list.title")
@@ -130,15 +160,15 @@ class ShopListMenu(private val sis: Sis, viewer: Player) : Menu(viewer, 6) {
                 .loreLines(Messages.lines(
                     if (admin) "list.entry-lore-admin" else "list.entry-lore",
                     "location" to shop.location.describe(), "trades" to shop.trades.size, "id" to shop.id,
-                    "searchable" to Messages.get(if (shop.searchable) "gui.yes" else "gui.no"),
-                    "locked" to Messages.get(if (shop.locked) "gui.yes" else "gui.no"),
+                    "searchable" to Messages.get(if (shop.searchable) "gui.answer-yes" else "gui.answer-no"),
+                    "locked" to Messages.get(if (shop.locked) "gui.answer-yes" else "gui.answer-no"),
                 ))
                 .plainTooltip()
             slot(i, icon) { click ->
                 when {
                     admin && click.shift -> EditorMenus.openShopEditor(sis, viewer, shop, this)
                     admin && click.right -> shop.location.toBukkit()?.let { viewer.teleportAsync(it) }
-                    admin || sis.config.allowRemoteTrade -> TradeMenu(sis, viewer, shop, adminView = admin).also { it.parent = this }.open()
+                    admin || sis.config.allowRemoteTrade -> if (!TradeMenu.refuseOpen(viewer, shop)) TradeMenu(sis, viewer, shop, adminView = admin).also { it.parent = this }.open()
                     else -> {
                         viewer.closeInventory()
                         Messages.send(viewer, "search.shop-location", "shop" to sis.shops.displayName(shop), "location" to shop.location.describe())

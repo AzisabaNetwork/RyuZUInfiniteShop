@@ -34,16 +34,48 @@ object Messages {
         }
         bundled("ja")?.let(::absorb)
         if (language != "ja") bundled(language)?.let(::absorb)
+        val dir = File(plugin.dataFolder, "lang")
         for (lang in listOf("ja", "en")) {
-            if (plugin.getResource("lang/$lang.yml") != null && !File(plugin.dataFolder, "lang/$lang.yml").exists()) {
-                plugin.saveResource("lang/$lang.yml", false)
+            // Reference copy of the current texts, rewritten every start (editing it has no effect)
+            plugin.getResource("lang/$lang.yml")?.use { input ->
+                File(dir, "default").mkdirs()
+                File(dir, "default/$lang.yml").outputStream().use { input.copyTo(it) }
             }
+            retireFullCopy(plugin, File(dir, "$lang.yml"))
+            val overrides = File(dir, "$lang.yml")
+            if (!overrides.exists()) overrides.writeText(OVERRIDES_TEMPLATE.replace("<lang>", lang), Charsets.UTF_8)
         }
-        val file = File(plugin.dataFolder, "lang/$language.yml")
+        // Only what an admin wrote in lang/<language>.yml replaces the bundled texts
+        val file = File(dir, "$language.yml")
         if (file.exists()) absorb(YamlConfiguration.loadConfiguration(file))
         values = merged
         prefix = merged["prefix"] ?: ""
     }
+
+    /**
+     * Early 2.0 builds copied the whole bundled file to lang/<lang>.yml, which then kept old texts after updates.
+     * Such a copy (no override marker) is renamed to .old once; the bundled texts are used instead.
+     */
+    private fun retireFullCopy(plugin: JavaPlugin, file: File) {
+        if (!file.exists() || file.useLines { lines -> lines.any { it.trim() == OVERRIDES_MARKER } }) return
+        val old = File(file.parentFile, file.name + ".old")
+        if (old.exists()) old.delete()
+        if (file.renameTo(old)) plugin.logger.info("lang/${file.name} was a full copy of old messages; moved to ${old.name} (put only the texts you want to change in lang/${file.name})")
+    }
+
+    private const val OVERRIDES_MARKER = "# sis-message-overrides"
+
+    private val OVERRIDES_TEMPLATE = """
+        $OVERRIDES_MARKER
+        # Texts written here replace the bundled ones. Write only what you want to change; everything else follows
+        # plugin updates. All keys and the current texts: lang/default/<lang>.yml (rewritten every start).
+        # ここに書いたメッセージだけが標準の文に置き換わります。変えたいキーだけ書いてください。
+        # 全キーと現在の標準の文は lang/default/<lang>.yml にあります（起動ごとに更新）。
+        #
+        # Example / 例:
+        # shop:
+        #   no-trades: "<red>まだ取引がありません"
+    """.trimIndent() + "\n"
 
     /** For tests: use these values directly. */
     fun loadValues(map: Map<String, String>) {

@@ -11,21 +11,53 @@ Rewrite in Kotlin for Paper 1.21.11. Same plugin name, data folder and `/sis` co
 
 ### Added
 
-- Villager-style trade screen: trade list + full view of the selected trade; x1 / x8 / x64 / as many as possible
-- Trades with any number of costs and rewards and any amounts (no more 2→1 / 4→4 / 6→2 shop types)
-- Money and console-command rewards as trade entries
-- Limits per player or shared (stock), resetting daily / weekly / monthly; per-trade permission
-- Dialog-based editing and search (no chat prompts); search by the item in hand
-- NPC look from any entity (`EntitySnapshot`), mannequin shops with skins, TextDisplay names, look-at-player
-- SQLite or MariaDB for trade counts and logs; gz change history per shop with `/sis history` / `/sis restore`
+- Trade screen
+  - Villager-style layout: trade list on the left, every cost and reward of the selected trade on the right;
+    the selected trade is marked with a yellow pane
+  - Buttons for x1 / x8 / x64 / as many as possible; the result arrow trades like a villager's result slot
+  - 1.x click keys on the arrow and the list: right-click 1, shift 8, wheel 64, Q as many as possible
+    (a plain left click in the list selects); every clickable item shows these keys
+  - Clicking an item in a trade searches all shops: a cost finds trades that give it, a reward finds trades that
+    take it (`sis.search`)
+  - Villager voices: "yes" on a trade, "no" when it cannot be done (the reason goes to chat)
+  - Clicking outside the window turns pages (left = previous, right = next); page arrows only when that page exists
+  - Bundles preview trades with more entries than slots
+- Trades
+  - Any number of costs and rewards, any amounts (no more 2→1 / 4→4 / 6→2 shop types)
+  - Money (Vault) and console-command rewards as trade entries
+  - Limits per player or shared stock, resetting daily / weekly / monthly; success chance; per-trade permission
+- Storage Box (1.8.0, maven.azisaba.net): box contents count as items the player has and pay costs after loose
+  items; rewards go into a box that already holds that item, even with a full inventory
+- Personal settings (`/sis settings`, button in the trade screen): pay from Storage Boxes, rewards into Storage
+  Boxes, trade from the list, show the how-to dialog
+- Editing
+  - Dialogs instead of chat prompts (shop settings, NPC kind, trade options, amounts, commands, search)
+  - Own icon per editor button
+  - Middle-click copies a trade's item to the cursor for staff (trade editor, shop editor, trade screen)
+  - NPC look copied from any entity (`EntitySnapshot`), mannequin shops with skins, equipment, invisible NPC,
+    look-at-player, TextDisplay names
+  - Change history per shop with `/sis history` / `/sis restore`
+- SQLite or MariaDB for trade counts, logs and player settings
 - `ShopPreTradeEvent` / `ShopTradeEvent`
-- Automatic migration of 1.x data (moved to `legacy-1.x/`), `/sis migrate` for other folders
+- Automatic migration of 1.x data (moved to `legacy-1.x/`), `/sis migrate` for other folders; shops migrated by
+  an earlier 2.0 build take their invisible-NPC setting from `legacy-1.x/` on the next start
 
 ### Changed
 
 - Shop files: `shops/<id>.yml` (format 2); IDs like `world_10_64_-3`
-- Permissions: `sis.admin` (1.x `sis.op` still grants it)
+- Lock and searchable work as in 1.x: a locked shop opens only for `sis.locked` (no view-only state),
+  `/sis open` still opens it; unsearchable shops stay out of search and the shop list
+- Shops without trades cannot be opened (from the NPC, `/sis open`, the list, search or the editor)
+- Permissions: `sis.admin`, `sis.locked` (1.x `sis.op` still grants them)
+- Messages: the bundled texts are always used; `lang/<lang>.yml` holds only overrides and `lang/default/` has the
+  current texts. A full copy written by an early 2.0 build is moved to `lang/<lang>.yml.old`
 - 1.x `TradeCompleteEvent` is still fired (deprecated) for plugins that listen to it by name
+
+### Fixed
+
+- Message keys `yes` / `no` were read as booleans by YAML, so their texts never showed (now checked by a test)
+- Baby NPCs grew up and zombie-type NPCs burned in daylight
+- Trade limits were dropped when a shop file was read back
 
 ### Removed
 

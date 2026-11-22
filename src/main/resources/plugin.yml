@@ -34,10 +34,14 @@ permissions:
   sis.list:
     description: /sis list でショップ一覧を見る
     default: true
+  sis.locked:
+    description: ロック中のショップを検索・一覧で見て、開いて取引できる
+    default: op
   sis.admin:
-    description: ショップの作成・編集・管理（ロック中のショップでも取引できる）
+    description: ショップの作成・編集・管理
     default: op
     children:
+      sis.locked: true
       sis.player: true
       sis.search: true
       sis.list: true

@@ -51,11 +51,8 @@ class ShopOpener(private val sis: Sis) {
             EditorMenus.openShopEditor(sis, player, shop)
             return
         }
-        if (shop.trades.isEmpty()) {
-            Messages.send(player, "shop.no-trades")
-            if (!admin) return
-        }
-        val show = { TradeMenu(sis, player, shop, adminView = admin).open() }
+        if (TradeMenu.refuseOpen(player, shop, bypassLock = forceTrade)) return
+        val show = { TradeMenu(sis, player, shop, adminView = admin, unlocked = forceTrade || shop.canOpen(player)).open() }
         val afterLoad = {
             val wants = sis.config.tutorial && !sis.settings[player.uniqueId].tutorialHidden
             if (wants && tutorialShown.add(player.uniqueId)) sis.dialogs.tutorial(player, show) else show()

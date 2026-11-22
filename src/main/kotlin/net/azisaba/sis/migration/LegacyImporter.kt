@@ -135,6 +135,40 @@ class LegacyImporter(private val sis: Sis) {
         private val LEGACY_ITEM = Regex("^\\s+v: (1\\d{3}|2\\d{3})\\s*$", RegexOption.MULTILINE)
     }
 
+    /**
+     * Shops migrated by a 2.0 build that did not know `invisible` yet: their files have no such line.
+     * Takes the flag from the 1.x file in `legacy-1.x/shops/` and appends it to the 2.x file, leaving everything
+     * else (edits made since the migration) as it is. Runs once: afterwards the files have the line.
+     *
+     * @return the IDs of the shops whose NPC became invisible
+     */
+    fun backfillFlags(dataFolder: File): List<String> {
+        val legacyDir = File(dataFolder, "legacy-1.x/shops")
+        val shopDir = File(dataFolder, "shops")
+        val updated = ArrayList<String>()
+        val invisibleLine = Regex("^\\s+Invisible:\\s*true\\s*$", RegexOption.MULTILINE)
+        legacyDir.listFiles { f -> f.isFile && f.name.endsWith(".yml") }?.sortedBy { it.name }?.forEach { legacy ->
+            val id = newId(legacy.name.removeSuffix(".yml")) ?: return@forEach
+            val target = File(shopDir, "$id.yml")
+            if (!target.isFile) return@forEach
+            val text = target.readText(Charsets.UTF_8)
+            if (text.lineSequence().any { it.startsWith("invisible:") }) return@forEach
+            val invisible = invisibleLine.containsMatchIn(legacy.readText(Charsets.UTF_8))
+            target.appendText((if (text.endsWith("\n")) "" else "\n") + "invisible: $invisible\n", Charsets.UTF_8)
+            if (invisible) updated += id
+        }
+        return updated
+    }
+
+    /** The 2.x ID of a 1.x file name `<world>,<x>,<y>,<z>`, or null when it is not one. */
+    private fun newId(oldId: String): String? {
+        val parts = oldId.split(',')
+        if (parts.size < 4) return null
+        val coords = parts.takeLast(3).map { it.toDoubleOrNull() ?: return null }
+        val world = parts.dropLast(3).joinToString(",")
+        return "${world}_${coords[0].toInt()}_${coords[1].toInt()}_${coords[2].toInt()}".replace(Regex("[^A-Za-z0-9_\\-]"), "_")
+    }
+
     private fun isLegacyShopFile(text: String): Boolean =
         text.lineSequence().any { it.startsWith("Npc:") } && text.lineSequence().none { it.startsWith("format:") }
 
@@ -182,6 +216,7 @@ class LegacyImporter(private val sis: Sis) {
             searchable = yaml.getBoolean("Npc.Status.Searchable", true),
             nameVisible = true,
             lookAtPlayer = false,
+            invisible = yaml.getBoolean("Npc.Options.Invisible", false),
         )
     }
 
@@ -287,9 +322,6 @@ class LegacyImporter(private val sis: Sis) {
             EntityType.SHEEP -> dye(o.getString("Color"))?.let { tags += "Color:${it}b" }
             EntityType.WOLF -> dye(o.getString("Color"))?.let { tags += "CollarColor:${it}b" }
             else -> Unit
-        }
-        if (o.getBoolean("Invisible", false)) {
-            tags += "active_effects:[{id:\"minecraft:invisibility\",amplifier:0b,duration:-1,show_particles:0b,show_icon:0b}]"
         }
         return "{${tags.joinToString(",")}}"
     }

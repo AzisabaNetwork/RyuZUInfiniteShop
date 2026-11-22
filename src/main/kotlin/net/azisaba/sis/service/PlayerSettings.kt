@@ -10,6 +10,8 @@ data class PlayerSettings(
     val payFromBoxes: Boolean = true,
     /** Rewards go into a Storage Box holding the same item, when there is one. */
     val rewardsIntoBoxes: Boolean = true,
+    /** Right-click / shift / wheel / Q on a trade in the list trades (off: the list only selects). */
+    val tradeFromList: Boolean = true,
     /** The how-to dialog was turned off. */
     val tutorialHidden: Boolean = false,
 )
@@ -29,6 +31,7 @@ class PlayerSettingsService(private val db: Database) {
         cache[player] = PlayerSettings(
             payFromBoxes = NO_PAY_FROM_BOXES !in flags,
             rewardsIntoBoxes = NO_REWARDS_INTO_BOXES !in flags,
+            tradeFromList = NO_TRADE_FROM_LIST !in flags,
             tutorialHidden = TUTORIAL_HIDDEN in flags,
         )
     }
@@ -46,12 +49,14 @@ class PlayerSettingsService(private val db: Database) {
         }
         store(NO_PAY_FROM_BOXES, !settings.payFromBoxes, !old.payFromBoxes)
         store(NO_REWARDS_INTO_BOXES, !settings.rewardsIntoBoxes, !old.rewardsIntoBoxes)
+        store(NO_TRADE_FROM_LIST, !settings.tradeFromList, !old.tradeFromList)
         store(TUTORIAL_HIDDEN, settings.tutorialHidden, old.tutorialHidden)
     }
 
     companion object {
         const val NO_PAY_FROM_BOXES = "settings.no-pay-from-boxes"
         const val NO_REWARDS_INTO_BOXES = "settings.no-rewards-into-boxes"
+        const val NO_TRADE_FROM_LIST = "settings.no-trade-from-list"
 
         /** Same flag name as before settings existed, so "don't show again" answers are kept. */
         const val TUTORIAL_HIDDEN = "tutorial"

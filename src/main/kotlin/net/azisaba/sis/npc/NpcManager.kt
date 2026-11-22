@@ -117,6 +117,7 @@ class NpcManager(
             entity.bodyYaw = shop.location.yaw
         }
         if (entity is Mob) entity.isAware = false
+        if (entity is LivingEntity) entity.isInvisible = shop.invisible
         // Ageing and sun burning still tick without AI: babies would grow up and helmets wear out.
         if (entity is org.bukkit.entity.Breedable) entity.ageLock = true
         if (entity is org.bukkit.entity.Zombie) entity.setShouldBurnInDay(false)

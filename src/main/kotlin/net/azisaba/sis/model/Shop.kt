@@ -72,13 +72,18 @@ class Shop(
     var location: ShopLocation,
     var npc: NpcSpec,
     val trades: MutableList<Trade> = mutableListOf(),
-    /** Players can see the trades but not trade. */
+    /** Only players with `sis.locked` can open the shop (1.x "lock"). There is no view-only state. */
     var locked: Boolean = false,
     /** Shows up in /sis search and the shop list. */
     var searchable: Boolean = true,
     var nameVisible: Boolean = true,
     var lookAtPlayer: Boolean = false,
+    /** The NPC is invisible (only its name and equipment show), like 1.x "invisible". */
+    var invisible: Boolean = false,
 ) {
+    /** Whether [player] may open (and trade in) this shop: it is not locked, or they may pass locks. */
+    fun canOpen(player: org.bukkit.permissions.Permissible): Boolean = !locked || player.hasPermission(LOCK_BYPASS_PERMISSION)
+
     fun trade(id: java.util.UUID): Trade? = trades.firstOrNull { it.id == id }
 
     fun replaceTrade(trade: Trade) {
@@ -86,7 +91,11 @@ class Shop(
         if (index >= 0) trades[index] = trade else trades += trade
     }
 
+    companion object {
+        const val LOCK_BYPASS_PERMISSION = "sis.locked"
+    }
+
     fun copyOf(newId: String = id): Shop = Shop(
-        newId, name, location, npc, trades.toMutableList(), locked, searchable, nameVisible, lookAtPlayer,
+        newId, name, location, npc, trades.toMutableList(), locked, searchable, nameVisible, lookAtPlayer, invisible,
     )
 }

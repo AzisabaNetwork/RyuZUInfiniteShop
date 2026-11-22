@@ -87,12 +87,15 @@ class Dialogs(private val sis: Sis) {
                 bool("searchable", "dialog.shop.searchable", shop.searchable),
                 bool("nameVisible", "dialog.shop.name-visible", shop.nameVisible),
                 bool("lookAtPlayer", "dialog.shop.look-at-player", shop.lookAtPlayer),
+                bool("invisible", "dialog.shop.invisible", shop.invisible),
                 DialogInput.numberRange("yaw", Messages.get("dialog.shop.yaw"), -180f, 180f).step(15f)
                     .initial((Math.round(shop.location.yaw / 15f) * 15f).coerceIn(-180f, 180f)).width(300).build(),
             ),
         ) { view, p ->
             val yaw = view.getFloat("yaw") ?: shop.location.yaw
-            val respawn = yaw != shop.location.yaw
+            val invisible = view.getBoolean("invisible") ?: shop.invisible
+            val respawn = yaw != shop.location.yaw || invisible != shop.invisible
+            shop.invisible = invisible
             shop.name = view.getText("name") ?: shop.name
             shop.locked = view.getBoolean("locked") ?: shop.locked
             shop.searchable = view.getBoolean("searchable") ?: shop.searchable
@@ -195,7 +198,7 @@ class Dialogs(private val sis: Sis) {
         show(
             player, from, Messages.get("dialog.confirm.title"),
             body = listOf(DialogBody.plainMessage(message)),
-            confirmLabel = Messages.get("dialog.confirm.yes"),
+            confirmLabel = Messages.get("dialog.confirm.run"),
         ) { _, p -> onYes(p) }
     }
 
@@ -227,12 +230,14 @@ class Dialogs(private val sis: Sis) {
             inputs = listOf(
                 bool("payFromBoxes", "dialog.settings.pay-from-boxes", current.payFromBoxes),
                 bool("rewardsIntoBoxes", "dialog.settings.rewards-into-boxes", current.rewardsIntoBoxes),
+                bool("tradeFromList", "dialog.settings.trade-from-list", current.tradeFromList),
                 bool("tutorial", "dialog.settings.tutorial", !current.tutorialHidden),
             ),
         ) { view, p ->
             sis.settings.set(p.uniqueId, PlayerSettings(
                 payFromBoxes = view.getBoolean("payFromBoxes") ?: current.payFromBoxes,
                 rewardsIntoBoxes = view.getBoolean("rewardsIntoBoxes") ?: current.rewardsIntoBoxes,
+                tradeFromList = view.getBoolean("tradeFromList") ?: current.tradeFromList,
                 tutorialHidden = !(view.getBoolean("tutorial") ?: !current.tutorialHidden),
             ))
             Messages.send(p, "settings.saved")

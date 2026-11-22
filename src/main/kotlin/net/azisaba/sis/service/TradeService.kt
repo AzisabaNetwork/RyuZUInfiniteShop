@@ -92,7 +92,7 @@ class TradeService(
 
     fun evaluate(player: Player, shop: Shop, trade: Trade, wanted: Int, bypassLock: Boolean = false): Evaluation {
         if (!isValid(trade)) return Evaluation(0, TradeStatus.INVALID)
-        if (shop.locked && !bypassLock && !player.hasPermission("sis.admin")) return Evaluation(0, TradeStatus.LOCKED)
+        if (!bypassLock && !shop.canOpen(player)) return Evaluation(0, TradeStatus.LOCKED)
         trade.options.permission?.let { if (!player.hasPermission(it)) return Evaluation(0, TradeStatus.NO_PERMISSION) }
 
         var bound = wanted.coerceAtLeast(0)

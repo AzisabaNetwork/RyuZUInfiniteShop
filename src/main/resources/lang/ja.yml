@@ -4,6 +4,8 @@ prefix: "<dark_gray>[<green>SIS</green>]</dark_gray> "
 shop:
   unnamed: "<gray>ショップ <id>"
   no-trades: "<red>このショップにはまだ取引がありません"
+  no-trades-admin: "<gray>スニークしながら右クリックか /sis edit <id> で取引を追加できます"
+  locked: "<red>このショップはロックされています"
 
 status:
   ready: "<green>取引できます"
@@ -58,11 +60,17 @@ trade:
   chance: "<yellow>成功確率: <white><chance>%"
   from-shop: "<gray>ショップ: </gray><shop> <dark_gray>(<location>)"
   list-hint:
-    - "<dark_gray>クリック: 詳細を表示"
-    - "<dark_gray>シフトクリック: 1回取引"
+    - "<dark_gray>クリック: 詳細を表示 / 右クリック: 1回取引"
+    - "<dark_gray>シフトクリック: 8回 / ホイールクリック: 64回"
+    - "<dark_gray>Qキー: 買えるだけ取引"
+  search-cost-hint:
+    - "<dark_gray>クリック: このアイテムがもらえる取引を探す"
+  search-reward-hint:
+    - "<dark_gray>クリック: このアイテムを使う取引を探す"
   arrow-hint:
     - ""
-    - "<dark_gray>クリック: 1回取引"
+    - "<dark_gray>クリック: 1回 / シフトクリック: 8回"
+    - "<dark_gray>ホイールクリック: 64回 / Qキー: 買えるだけ"
   list-hint-view:
     - "<dark_gray>クリック: 詳細を表示"
 
@@ -86,8 +94,8 @@ gui:
     - "<dark_gray>/sis settings でも開けます"
   back: "<white>戻る"
   close: "<white>閉じる"
-  yes: "<green>はい"
-  no: "<red>いいえ"
+  answer-yes: "<green>はい"
+  answer-no: "<red>いいえ"
 
 search:
   open-shop: "<green>このショップを開く"
@@ -98,6 +106,8 @@ search:
   empty-query: "<red>キーワードを入力するか、手に持ったアイテムで検索してください"
   no-results: "<red>見つかりませんでした"
   found: "<green><count>件 見つかりました"
+  found-sources: "<green><item> <green>がもらえる取引: <count>件"
+  found-uses: "<green><item> <green>を使う取引: <count>件"
 
 list:
   title: "ショップ一覧"
@@ -133,6 +143,7 @@ editor:
     - "<gray>名前: </gray><name>"
     - "<gray>ロック: <locked>"
     - "<gray>検索: <searchable>"
+    - "<gray>NPCを透明: <invisible>"
   npc-kind: "<gold>NPCの種類"
   npc-kind-lore:
     - "<gray>現在: <white><kind>"
@@ -226,16 +237,18 @@ dialog:
     body: "<gray>あなただけに適用される設定です"
     pay-from-boxes: "支払いに StorageBox の中身を使う"
     rewards-into-boxes: "もらったアイテムを同じアイテムの StorageBox に入れる"
+    trade-from-list: "一覧の取引ボタンでも取引する（右クリック・シフト・ホイール・Q）"
     tutorial: "ショップの使い方を表示する"
   cancel: "キャンセル"
   shop:
     title: "ショップ設定 (<id>)"
     body: "<gray>名前は MiniMessage で装飾できます（例: <green>&lt;green&gt;武器屋</green>）"
     name: "名前"
-    locked: "ロック（見るだけで取引できない）"
+    locked: "ロック（sis.locked 権限を持つ人だけ開ける）"
     searchable: "検索・一覧に表示する"
     name-visible: "頭上に名前を表示する"
     look-at-player: "近くのプレイヤーの方を向く"
+    invisible: "NPCを透明にする（名前と装備だけ見える）"
     yaw: "向き (度)"
   npc:
     title: "NPCの種類"
@@ -269,7 +282,7 @@ dialog:
     description: "説明（プレイヤーに表示）"
   confirm:
     title: "確認"
-    yes: "実行する"
+    run: "実行する"
   search:
     title: "取引を検索"
     body: "<gray>アイテム名・NPC名・MMIDの一部で探せます"
@@ -287,7 +300,7 @@ dialog:
     body:
       - "左側に取引の一覧、右側に選んだ取引の詳しい内容が出ます。"
       - "取引をクリックして選び、下の「1回 / 8回 / 64回 / 買えるだけ」で取引します。"
-      - "一覧の取引をシフトクリックすると、すぐに1回取引できます。"
+      - "一覧の取引は、右クリックで1回、シフトクリックで8回、ホイールクリックで64回、Qキーで買えるだけ取引できます。"
       - "品目がたくさんある取引はバンドルにカーソルを合わせると中身が見られます。"
       - "下の虫眼鏡から、すべてのショップの取引を検索できます。"
       - "GUIの外を左クリックで前のページ、右クリックで次のページに移動します。"
