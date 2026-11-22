@@ -1,0 +1,106 @@
+# SearchableInfiniteShop 2.x
+# Text is MiniMessage (https://docs.advntr.dev/minimessage/format.html). "§" codes are not used.
+
+# Message file in lang/ (ja / en)
+language: ja
+
+storage:
+  # sqlite: plugins/SearchableInfiniteShop/data.db
+  # mariadb: share trade counts (limits) and logs between servers
+  type: sqlite
+  table-prefix: "sis_"
+  mariadb:
+    host: localhost
+    port: 3306
+    database: sis
+    user: root
+    password: ""
+    pool-size: 4
+
+limits:
+  # Daily / weekly / monthly limits reset at this hour in this time zone (weeks start on Monday)
+  timezone: Asia/Tokyo
+  reset-hour: 5
+  # How often counts of server-wide limits are read again (only matters when several servers share MariaDB)
+  global-refresh-seconds: 30
+
+matching:
+  # MythicMobs items must have the same MMID AND the same texture/lore as what MythicMobs generates now.
+  # false: the MMID alone is enough (1.x behaviour)
+  mythic-strict: true
+  # MMIDs that are never saved by MMID (kept as plain items). "*" wildcards allowed
+  mythic-excluded-ids: []
+
+logging:
+  trades: true
+  edits: true
+
+history:
+  # Number of old versions kept per shop file (/sis history, /sis restore)
+  keep: 30
+
+npc:
+  # Range in blocks for "look at player"
+  look-range: 8.0
+  # Extra height of the name above the NPC
+  name-offset: 0.35
+
+gui:
+  # <shop> = shop name, <page>/<pages> = trade list page
+  # With a resource pack you can put a background glyph here, e.g. "<white><font:sis:gui></font></white><shop>"
+  title: "<shop>"
+  search-title: "検索結果"
+  # How each GUI icon looks. material + optional item-model (namespaced key) or custom-model-data (number)
+  icons:
+    status-ready: { material: LIME_STAINED_GLASS_PANE }
+    status-unavailable: { material: RED_STAINED_GLASS_PANE }
+    status-limited: { material: ORANGE_STAINED_GLASS_PANE }
+    status-locked: { material: GRAY_STAINED_GLASS_PANE }
+    filler: { material: BLACK_STAINED_GLASS_PANE }
+    divider: { material: GRAY_STAINED_GLASS_PANE }
+    previous: { material: ARROW }
+    next: { material: ARROW }
+    arrow: { material: SPECTRAL_ARROW }
+    buy-1: { material: LIME_DYE }
+    buy-8: { material: LIME_DYE }
+    buy-64: { material: LIME_DYE }
+    buy-max: { material: EMERALD }
+    money: { material: GOLD_NUGGET }
+    command: { material: COMMAND_BLOCK }
+    info: { material: BOOK }
+    search: { material: SPYGLASS }
+    open-shop: { material: CHEST }
+    empty-slot: { material: LIGHT_GRAY_STAINED_GLASS_PANE }
+    back: { material: OAK_DOOR }
+    close: { material: BARRIER }
+    player-settings: { material: REPEATER }
+    # marks the selected trade in the list
+    selected: { material: YELLOW_STAINED_GLASS_PANE }
+    # editor
+    new-trade: { material: WRITABLE_BOOK }
+    preview: { material: EMERALD }
+    settings: { material: NAME_TAG }
+    npc-kind: { material: ARMOR_STAND }
+    capture: { material: ENDER_EYE }
+    equipment: { material: IRON_CHESTPLATE }
+    respawn: { material: RESPAWN_ANCHOR }
+    teleport: { material: ENDER_PEARL }
+    itemize-shop: { material: DIAMOND }
+    itemize-trade: { material: EMERALD_BLOCK }
+    duplicate: { material: PAPER }
+    delete: { material: LAVA_BUCKET }
+    options: { material: COMPARATOR }
+    edit: { material: ANVIL }
+
+search:
+  # Players may trade directly from search results (otherwise they see where the shop is)
+  allow-remote-trade: false
+  max-results: 2000
+
+# Show the "how to use" dialog the first time a player opens a shop
+tutorial: true
+
+# Items for "itemized" trades and shops
+itemize:
+  trade-item: { material: EMERALD }
+  shop-item: { material: DIAMOND }

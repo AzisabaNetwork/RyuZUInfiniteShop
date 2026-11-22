@@ -1,0 +1,53 @@
+name: SearchableInfiniteShop
+version: '${version}'
+main: net.azisaba.sis.SearchableInfiniteShop
+api-version: '1.21.11'
+description: 村人取引風の無限ショップ（検索・回数制限・アイテム化つき）
+authors: [ Y_RyuZU, AzisabaNetwork ]
+softdepend:
+  - MythicMobs
+  - Citizens
+  - Vault
+  - StorageBox
+  - Multiverse-Core
+
+libraries:
+  - org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}
+  - com.zaxxer:HikariCP:${hikariVersion}
+  - org.xerial:sqlite-jdbc:${sqliteVersion}
+  - org.mariadb.jdbc:mariadb-java-client:${mariadbVersion}
+
+commands:
+  searchableinfiniteshop:
+    description: SearchableInfiniteShop のコマンド
+    usage: /<command> [search|list|settings|create|edit|open|remove|tp|move|searchable|limit|history|restore|mmid|migrate|reload|save]
+    aliases: [ sis ]
+    permission: sis.player
+
+permissions:
+  sis.player:
+    description: ショップで取引する
+    default: true
+  sis.search:
+    description: /sis search で取引を検索する
+    default: true
+  sis.list:
+    description: /sis list でショップ一覧を見る
+    default: true
+  sis.admin:
+    description: ショップの作成・編集・管理（ロック中のショップでも取引できる）
+    default: op
+    children:
+      sis.player: true
+      sis.search: true
+      sis.list: true
+  # 1.x の権限名。付与済みの権限をそのまま使えるように残している
+  sis.op:
+    description: sis.admin と同じ (1.x)
+    default: op
+    children:
+      sis.admin: true
+  sis.*:
+    description: すべての権限
+    children:
+      sis.admin: true

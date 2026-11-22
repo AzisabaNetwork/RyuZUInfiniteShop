@@ -1,45 +1,44 @@
-# AGENTS.md — RyuZUInfiniteShop (SearchableInfiniteShop)
+# AGENTS.md — SearchableInfiniteShop 2.x
 
-## Project
+Paper 1.21.11 plugin: villager-style shops with unlimited trade entries, search, limits and itemized trades.
+Rewrite of 1.x (branch `ver/1.21.11`) in Kotlin. Plugin name, data folder and `/sis` are unchanged.
 
-Spigot/Bukkit plugin — infinite paginated shop GUI with search.  
-Root `settings.gradle.kts` name: `SearchableInfiniteShop`, group `com.github.ryuzu`.
+## Build
 
-## Build & dev commands
+- `./gradlew build` → `build/libs/SearchableInfiniteShop-<version>.jar` (tests run as part of build)
+- JDK 21. Single Gradle module. Kotlin stdlib, HikariCP, sqlite-jdbc and mariadb-java-client are NOT shaded:
+  Paper downloads them from `plugin.yml` `libraries` (versions filled in by `processResources`).
 
-- **Build all:** `./gradlew build` — produces fat JAR at `build/libs/` (root project aggregates all submodules)
-- **Single submodule:** `./gradlew :searchableinfiniteshop-plugin:build`
-- **Publish:** `./gradlew clean test publish` (no tests exist, so this is effectively `clean publish`)
-- **JDK:** Zulu 21 (defined in `mise.toml`)
+## Layout (`src/main/kotlin/net/azisaba/sis`)
 
-## Multi-module structure
+| package | role |
+|---|---|
+| `model` | `Shop`, `Trade`, `TradeEntry` (Item / Mythic / Money / Command), `TradeOptions`, `NpcSpec` |
+| `storage` | `ShopYaml` (format 2), `ShopRepository` (one file per shop + gz history), `Database` (SQLite/MariaDB) |
+| `service` | `TradeService` (check + do N trades at once), `TradeCounter` (limits, per period), `PeriodClock`, `ShopService` (registry; call `changed()` after editing a shop) |
+| `npc` | `NpcManager`: non-persistent NPCs spawned per chunk load from `EntitySnapshot`s |
+| `gui` | `Menu` base, `TradeMenu` (villager-style), editors, search, shop list |
+| `dialog` | Paper Dialog API forms (replace 1.x chat prompts) |
+| `itemize` | trades/shops as items (PDC holds the YAML) |
+| `migration` | `LegacyImporter`: 1.x `shops/<world>,<x>,<y>,<z>.yml` + `options.yml` → 2.x |
+| `api.event` | `ShopPreTradeEvent`, `ShopTradeEvent` |
 
-| dir | Gradle project | package | role |
-|---|---|---|---|
-| `api/` | `-api` | `com.github.ryuzu.searchableinfiniteshop.api` | `IMythicHandler` interface |
-| `commandlib/` | `-commandlib` | `com.github.ryuzu.ryuzucommandsgenerator` | borrowed command framework |
-| `plugin/` | `-plugin` | `ryuzuinfiniteshop.ryuzuinfiniteshop` | **main shaded JAR**, contains plugin.yml |
-| `v16older/` | `-v16older` | `com.github.ryuzu.searchableinfiniteshop.v16older` | MythicMobs v4.12.0 compat |
-| `v16newer/` | `-v16newer` | `com.github.ryuzu.searchableinfiniteshop.v16newer` | MythicMobs v5.2.1 compat |
-| `v21newer/` | `-v21newer` | `com.github.ryuzu.searchableinfiniteshop.v21newer` | MythicMobs v5.12.0 compat |
+Java parts:
+- `item/mythic/ItemNormalizer.java` is SHARED with AziSync, EnderChestPlus, StorageBox, ItemStash (and mirrored in
+  MoreDataFix). Keep it identical apart from the package line; change all copies together.
+- `item/mythic/*MythicItemMatcher.java`, `VanillaMythicItems.java`: carried over from 1.x; all MythicMobs access goes
+  through `MythicInstanceProvider`.
+- `ryuzuinfiniteshop/ryuzuinfiniteshop/event/TradeCompleteEvent.java`: 1.x event under its old name for
+  LifeQuestCore, which listens by class name via reflection. Do not rename or remove.
 
-The `plugin` module depends on all version modules + commandlib + api.
+## Rules
 
-## Key facts
+- Commands are declared in `plugin.yml` (no Brigadier-only registration).
+- Item identity: `Items.toEntry` / `Items.matches` (same rules as 1.x: MMID entries unless excluded / vanilla
+  definition / different lore; `matching.mythic-strict` also compares texture and lore).
+- Database access only through `Database.async` (single thread, ordered) — never on the main thread.
+- Shop files are written on a background thread; the YAML text is built on the main thread.
 
-- **No tests** exist anywhere in the repo.
-- **Shadow JAR** relocates `com.saicone.rtag` → `${project.group}.libs.rtag` (mandatory, rtag must NOT leak).
-- **Package naming is inconsistent:** main plugin class is `ryuzuinfiniteshop.ryuzuinfiniteshop.RyuZUInfiniteShop`, NOT `com.github.ryuzu...`.
-- **plugin.yml:** name `SearchableInfiniteShop`, command alias `sis`, api-version `1.13`. No paper-plugin.yml.
-- **SoftDepends:** MythicMobs, Citizens, Vault — check `Bukkit.getPluginManager().getPlugin(...)` before use.
-- **Version detection:** `RyuZUInfiniteShop.VERSION` is parsed from Bukkit server version string at static init.
-- **Lombok** used (`@Getter` on `plugin` field); IDEA annotation processing required.
-- **Build artifact:** `build/libs/*.jar` (uploaded by CI).
+## Tests
 
-## Notable conventions
-
-- All config files use `.yml` extension; loaded/saved via `FileUtil` (custom, not Configurate/ADventure).
-- GUI system under `data/gui/` is homegrown (not an external GUI lib).
-- `ConfigurationSerialization` is used for `MythicItem` and `TradeOption` (Bukkit serialization).
-- The `registerAllListeners()` method does classpath scanning from the JAR — at runtime, not compile-time.
-- CI publishes to `https://repo.azisaba.net` with credentials from `gradle.properties` secrets.
+JUnit 5 + MockBukkit (`src/test/kotlin`): trade engine, period keys, YAML round trip/history, 1.x import.

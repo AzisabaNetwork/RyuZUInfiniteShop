@@ -5,7 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - Unreleased
+
+Rewrite in Kotlin for Paper 1.21.11. Same plugin name, data folder and `/sis` command.
+
+### Added
+
+- Villager-style trade screen: trade list + full view of the selected trade; x1 / x8 / x64 / as many as possible
+- Trades with any number of costs and rewards and any amounts (no more 2→1 / 4→4 / 6→2 shop types)
+- Money and console-command rewards as trade entries
+- Limits per player or shared (stock), resetting daily / weekly / monthly; per-trade permission
+- Dialog-based editing and search (no chat prompts); search by the item in hand
+- NPC look from any entity (`EntitySnapshot`), mannequin shops with skins, TextDisplay names, look-at-player
+- SQLite or MariaDB for trade counts and logs; gz change history per shop with `/sis history` / `/sis restore`
+- `ShopPreTradeEvent` / `ShopTradeEvent`
+- Automatic migration of 1.x data (moved to `legacy-1.x/`), `/sis migrate` for other folders
+
+### Changed
+
+- Shop files: `shops/<id>.yml` (format 2); IDs like `world_10_64_-3`
+- Permissions: `sis.admin` (1.x `sis.op` still grants it)
+- 1.x `TradeCompleteEvent` is still fired (deprecated) for plugins that listen to it by name
+
+### Removed
+
+- Per-entity shop classes and editors (replaced by copying an entity's look), XMaterial, NBT string tags,
+  commandlib, the shop types
+
+## [Unreleased 1.x]
 
 ### Added
 
