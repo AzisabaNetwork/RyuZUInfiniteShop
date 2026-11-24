@@ -142,7 +142,7 @@ editor:
     - ""
     - "<dark_gray>Click: edit"
     - "<dark_gray>Shift+left: move earlier / Shift+right: move later"
-    - "<dark_gray>Middle-click: copy the reward item"
+    - "<dark_gray>Middle-click / number key: copy the reward item"
     - "<dark_gray>Q: duplicate"
   preview: "<green>Open trade screen"
   settings: "<gold>Shop settings"
@@ -211,7 +211,7 @@ editor:
   entry-lore:
     - ""
     - "<dark_gray>Click: change / Right-click: remove"
-    - "<dark_gray>Middle-click: copy the item"
+    - "<dark_gray>Middle-click / number key: copy the item"
   duplicate-trade: "<green>Duplicate this trade"
   delete-trade: "<red>Delete this trade"
   side-full: "<red>No more room"

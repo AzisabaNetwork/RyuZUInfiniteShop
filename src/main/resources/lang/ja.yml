@@ -142,7 +142,7 @@ editor:
     - ""
     - "<dark_gray>クリック: 編集"
     - "<dark_gray>シフト+左クリック: 前へ / シフト+右クリック: 後ろへ"
-    - "<dark_gray>ホイールクリック: 報酬のアイテムをコピー"
+    - "<dark_gray>ホイールクリック/数字キー: 報酬のアイテムをコピー"
     - "<dark_gray>Qキー: 複製"
   preview: "<green>取引画面を見る"
   settings: "<gold>ショップ設定"
@@ -211,7 +211,7 @@ editor:
   entry-lore:
     - ""
     - "<dark_gray>クリック: 個数・内容を変更 / 右クリック: 削除"
-    - "<dark_gray>ホイールクリック: アイテムをコピー"
+    - "<dark_gray>ホイールクリック/数字キー: アイテムをコピー"
   duplicate-trade: "<green>この取引を複製"
   delete-trade: "<red>この取引を削除"
   side-full: "<red>これ以上追加できません"

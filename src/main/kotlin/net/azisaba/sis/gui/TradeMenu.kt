@@ -188,7 +188,7 @@ class TradeMenu(
             if (searchable) item.addLore(Messages.lines(if (cost) "trade.search-cost-hint" else "trade.search-reward-hint"))
             slot(s, item) { click ->
                 when {
-                    click.type == ClickType.MIDDLE && admin -> ItemCopy.toCursor(viewer, click.event, entry)
+                    ItemCopy.isCopy(click) && admin -> ItemCopy.copy(viewer, click, entry)
                     (click.left || click.right) && searchable -> SearchMenus.byItem(sis, viewer, entry, findIn = if (cost) SearchTarget.REWARDS else SearchTarget.COSTS)
                 }
             }

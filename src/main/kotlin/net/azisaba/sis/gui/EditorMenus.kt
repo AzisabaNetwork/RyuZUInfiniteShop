@@ -134,9 +134,9 @@ class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sho
     private fun onTradeClick(click: Click, index: Int) {
         val trades = shop.trades
         when {
-            click.type == ClickType.MIDDLE -> {
+            ItemCopy.isCopy(click) -> {
                 // The icon is the (first) reward: copy that item.
-                trades[index].rewards.firstOrNull()?.let { ItemCopy.toCursor(viewer, click.event, it) }
+                trades[index].rewards.firstOrNull()?.let { ItemCopy.copy(viewer, click, it) }
                 return
             }
             click.type == ClickType.DROP -> {
@@ -283,8 +283,8 @@ class TradeEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sh
     private fun onEntryClick(click: Click, cost: Boolean, index: Int) {
         val list = entriesOf(cost).toMutableList()
         val entry = list[index]
-        if (click.type == ClickType.MIDDLE) {
-            ItemCopy.toCursor(viewer, click.event, entry)
+        if (ItemCopy.isCopy(click)) {
+            ItemCopy.copy(viewer, click, entry)
             return
         }
         if (!click.event.cursor.type.isAir) {
