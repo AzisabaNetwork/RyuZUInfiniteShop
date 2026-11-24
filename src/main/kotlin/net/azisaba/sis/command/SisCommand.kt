@@ -32,6 +32,8 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
         Sub("list", "sis.list", "list") { s, _ -> player(s)?.let { ShopListMenu(sis, it).open() } },
         Sub("settings", "sis.player", "settings") { s, _ -> player(s)?.let { sis.dialogs.playerSettings(it, null) } },
         Sub("create", "sis.admin", "create [villager|mannequin|mythic:<id>|citizens:<id>|block]") { s, a -> create(s, a) },
+        // 1.x name of create; same arguments, no argument = villager.
+        Sub("spawn", "sis.admin", "spawn [villager|mannequin|mythic:<id>|citizens:<id>|block]") { s, a -> create(s, a) },
         Sub("edit", "sis.admin", "edit [shop]") { s, a -> player(s)?.let { p -> shopArg(p, a.getOrNull(0), nearest = true)?.let { EditorMenus.openShopEditor(sis, p, it) } } },
         Sub("open", "sis.admin", "open <shop> [player]") { s, a -> open(s, a) },
         Sub("remove", "sis.admin", "remove <shop>") { s, a -> shopArg(s, a.getOrNull(0))?.let { sis.shops.remove(it, s); Messages.send(s, "editor.shop-deleted", "id" to it.id) } },
@@ -265,7 +267,7 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
         val last = args.last()
         val options: List<String> = when (sub.name) {
             "edit", "open", "remove", "tp", "move", "history", "restore", "mmid", "reload-single" -> if (args.size == 2) sis.shops.ids() else if (sub.name == "open" && args.size == 3) Bukkit.getOnlinePlayers().map { it.name } else emptyList()
-            "create" -> if (args.size == 2) NpcSpecs.suggestions() else emptyList()
+            "create", "spawn" -> if (args.size == 2) NpcSpecs.suggestions() else emptyList()
             "searchable" -> when (args.size) { 2 -> Bukkit.getWorlds().map { it.name }; 3 -> listOf("true", "false"); else -> emptyList() }
             "limit" -> when (args.size) {
                 2 -> Bukkit.getOnlinePlayers().map { it.name }

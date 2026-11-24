@@ -325,6 +325,7 @@ command:
     settings: "Open my settings"
     list: "Open the shop list"
     create: "Create a shop where you stand"
+    spawn: "Same as create (1.x spelling)"
     edit: "Edit a shop (nearest when omitted)"
     open: "Open a shop's trade screen (optionally for a player)"
     remove: "Delete a shop"

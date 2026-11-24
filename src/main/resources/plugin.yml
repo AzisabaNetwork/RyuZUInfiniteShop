@@ -20,7 +20,7 @@ libraries:
 commands:
   searchableinfiniteshop:
     description: SearchableInfiniteShop のコマンド
-    usage: /<command> [search|list|settings|create|edit|open|remove|tp|move|searchable|limit|history|restore|mmid|migrate|reload|reload-single|save]
+    usage: /<command> [search|list|settings|create|spawn|edit|open|remove|tp|move|searchable|limit|history|restore|mmid|migrate|reload|reload-single|save]
     aliases: [ sis ]
     permission: sis.player
 
