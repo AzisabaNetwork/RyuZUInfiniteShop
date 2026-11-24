@@ -164,7 +164,7 @@ class TradeMenu(
         val lore = optionLines(trade) + Messages.lines(if (tradable) "trade.arrow-hint" else "trade.list-hint-view")
         slot(2 * 9 + 7, icons.icon("arrow", Messages.get("status.${status.name.lowercase()}"), lore)) { click ->
             val times = bulkTimes(click, leftTrades = true) ?: return@slot
-            if (tradable) buy(pair, times) else fail()
+            if (tradable) buy(pair, times) else refuseRemote(shop)
         }
     }
 
@@ -220,14 +220,17 @@ class TradeMenu(
         slot(base + 4, icons.icon("search", Messages.get("gui.search"), Messages.lines("gui.search-lore"))) {
             sis.dialogs.search(viewer)
         }
-        if (pair == null || !canTrade(pair.first)) {
+        if (pair == null) {
             for (i in 5..8) slot(base + i, icons.filler())
             return
         }
+        // Always shown, so players find them; where this screen may not trade, a click explains why instead.
         val amounts = listOf("buy-1" to 1, "buy-8" to 8, "buy-64" to 64, "buy-max" to sis.trades.maxPerClick)
         amounts.forEachIndexed { i, (icon, times) ->
             val label = if (icon == "buy-max") Messages.get("gui.buy-max") else Messages.get("gui.buy", "times" to times)
-            slot(base + 5 + i, icons.icon(icon, label)) { buy(pair, times) }
+            slot(base + 5 + i, icons.icon(icon, label)) {
+                if (canTrade(pair.first)) buy(pair, times) else refuseRemote(pair.first)
+            }
         }
     }
 
@@ -300,6 +303,12 @@ class TradeMenu(
 
     private fun click() = viewer.playSound(viewer.location, Sound.UI_BUTTON_CLICK, 0.5f, 1.2f)
     private fun fail() = viewer.playSound(viewer.location, Sound.ENTITY_VILLAGER_NO, 0.7f, 1f)
+
+    /** Trading from this screen is off (search results with search.trade-from-results: false): say where the shop is. */
+    private fun refuseRemote(shop: Shop) {
+        fail()
+        Messages.send(viewer, "search.shop-location", "shop" to sis.shops.displayName(shop), "location" to shop.location.describe())
+    }
 
     companion object {
         /**

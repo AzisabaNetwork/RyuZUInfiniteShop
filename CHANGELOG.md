@@ -58,6 +58,9 @@ Rewrite in Kotlin for Paper 1.21.11. Same plugin name, data folder and `/sis` co
 - Message keys `yes` / `no` were read as booleans by YAML, so their texts never showed (now checked by a test)
 - Baby NPCs grew up and zombie-type NPCs burned in daylight
 - Trade limits were dropped when a shop file was read back
+- Newer clients (26.x) crashed when opening a trade screen: tools/armour were shown stackable and bundle previews
+  could be heavier than a full bundle, both invalid items; icons now follow the vanilla rules and bundles list
+  every entry in the lore
 
 ### Removed
 

@@ -58,9 +58,10 @@ class Icons(private val config: () -> PluginConfig) {
             if (template == null) {
                 icon("status-unavailable", Messages.get("entry.unknown-mythic", "id" to (entry as TradeEntry.Mythic).id))
             } else {
-                template.setData(DataComponentTypes.MAX_STACK_SIZE, 99)
-                template.amount = amount.coerceIn(1, 99)
-                if (amount > 99 || amount > template.type.maxStackSize) template.addLore(listOf(Messages.get("entry.amount", "amount" to "%,d".format(amount))))
+                // Damageable items must stay unstackable (vanilla rule; newer clients reject the item otherwise)
+                if (amount > template.maxStackSize && canRaiseStack(template)) template.setData(DataComponentTypes.MAX_STACK_SIZE, 99)
+                template.amount = amount.coerceIn(1, template.maxStackSize)
+                if (amount > template.amount) template.addLore(listOf(Messages.get("entry.amount", "amount" to "%,d".format(amount))))
                 template
             }
         }
@@ -73,17 +74,32 @@ class Icons(private val config: () -> PluginConfig) {
         }
     }
 
-    /** A bundle whose tooltip previews [entries] (used when a trade has more entries than slots). */
+    /**
+     * A bundle whose tooltip previews [entries] (used when a trade has more entries than slots). Every entry is
+     * also listed in the lore with its amount. The preview holds single items made stackable to 99, so the total
+     * bundle weight stays below 1: a heavier bundle is invalid and newer clients reject it (crash on open).
+     * Entries that cannot be made light (damageable items, bundles, bee nests) are only in the lore.
+     */
     fun bundle(entries: List<TradeEntry>, label: Component): ItemStack {
         val item = ItemStack.of(Material.BUNDLE)
-        val contents = entries.map { e ->
-            val shown = entry(e)
-            shown.amount = shown.amount.coerceAtMost(shown.type.maxStackSize)
-            shown
-        }
-        item.setData(DataComponentTypes.BUNDLE_CONTENTS, BundleContents.bundleContents(contents))
+        val contents = entries.asSequence()
+            .map { entry(it) }
+            .filter { canRaiseStack(it) && !it.hasData(DataComponentTypes.BUNDLE_CONTENTS) && it.type != Material.BEEHIVE && it.type != Material.BEE_NEST }
+            .map { it.also { shown -> shown.setData(DataComponentTypes.MAX_STACK_SIZE, 99); shown.amount = 1 } }
+            .take(BUNDLE_PREVIEW_MAX)
+            .toList()
+        if (contents.isNotEmpty()) item.setData(DataComponentTypes.BUNDLE_CONTENTS, BundleContents.bundleContents(contents))
         item.named(label)
+        item.loreLines(entries.map { describe(it) })
         return item
+    }
+
+    /** Vanilla rejects items that are both damageable and stackable. */
+    private fun canRaiseStack(item: ItemStack): Boolean = !item.hasData(DataComponentTypes.MAX_DAMAGE)
+
+    private companion object {
+        /** 98 items of weight 1/99 each stay below a full bundle. */
+        const val BUNDLE_PREVIEW_MAX = 98
     }
 
     /** One line per entry, for lore summaries ("Diamond ×256", "1,000 coins"). */
