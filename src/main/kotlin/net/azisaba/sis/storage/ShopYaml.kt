@@ -146,29 +146,43 @@ object ShopYaml {
             limit = int(limit, "max", 0).coerceAtLeast(0),
             limitScope = enumOr(limit?.get("scope")?.toString(), LimitScope.PLAYER),
             reset = enumOr(limit?.get("reset")?.toString(), ResetPeriod.NEVER),
-            chance = int(raw, "chance", 100).coerceIn(1, 100),
+            chance = int(raw, "chance", 100).coerceIn(0, 100),
             hideChance = raw["hide-chance"] as? Boolean ?: false,
             permission = raw["permission"]?.toString()?.takeIf { it.isNotBlank() },
         )
         return Trade(
             id = raw["id"]?.toString()?.let(UUID::fromString) ?: UUID.randomUUID(),
-            costs = (raw["costs"] as? List<*>).orEmpty().mapNotNull { (it as? Map<*, *>)?.let(::entryFromMap) },
-            rewards = (raw["rewards"] as? List<*>).orEmpty().mapNotNull { (it as? Map<*, *>)?.let(::entryFromMap) },
+            costs = entries(raw["costs"], "cost"),
+            rewards = entries(raw["rewards"], "reward"),
             options = options,
         )
     }
 
-    fun entryFromMap(raw: Map<*, *>): TradeEntry? {
+    /**
+     * Reads one cost or reward. An entry that cannot be read is an error, not skipped: a trade that silently lost a
+     * cost would hand out its rewards for free (and the next save would make that permanent).
+     */
+    fun entryFromMap(raw: Map<*, *>): TradeEntry {
         fun amount(): Int = (raw["amount"] as? Number)?.toInt() ?: 1
-        return when (raw["type"]?.toString()) {
+        val type = raw["type"]?.toString()
+        return when (type) {
             "item" -> (raw["item"] as? ItemStack)?.takeUnless { it.type.isAir }?.let { TradeEntry.Item(it.asOne(), amount()) }
-            "mythic" -> raw["id"]?.toString()?.let { TradeEntry.Mythic(it, amount()) }
+                ?: throw IllegalArgumentException("item entry without a readable item (${raw["item"]?.javaClass?.simpleName ?: "missing"})")
+            "mythic" -> raw["id"]?.toString()?.takeIf { it.isNotBlank() }?.let { TradeEntry.Mythic(it, amount()) }
+                ?: throw IllegalArgumentException("mythic entry without an id")
             "money" -> (raw["amount"] as? Number)?.toDouble()?.takeIf { it > 0 }?.let { TradeEntry.Money(it) }
+                ?: throw IllegalArgumentException("money entry without a positive amount")
             "command" -> raw["command"]?.toString()?.let {
                 TradeEntry.Command(it, raw["description"]?.toString() ?: "", raw["display"] as? ItemStack)
-            }
-            else -> null
+            } ?: throw IllegalArgumentException("command entry without a command")
+            else -> throw IllegalArgumentException("unknown entry type '$type'")
         }
+    }
+
+    private fun entries(raw: Any?, what: String): List<TradeEntry> = (raw as? List<*>).orEmpty().mapIndexed { i, e ->
+        val map = e as? Map<*, *> ?: (e as? ConfigurationSection)?.getValues(false)
+            ?: throw IllegalArgumentException("$what #${i + 1} is not an entry")
+        runCatching { entryFromMap(map) }.getOrElse { throw IllegalArgumentException("$what #${i + 1}: ${it.message}", it) }
     }
 
     private inline fun <reified E : Enum<E>> enumOr(name: String?, default: E): E =

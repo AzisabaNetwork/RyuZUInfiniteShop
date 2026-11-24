@@ -48,9 +48,15 @@ object Itemizer {
         return item.addLore(lore)
     }
 
-    fun shopItem(sis: Sis, shop: Shop): ItemStack {
+    /** Above this the item is too large to send to players (they would be kicked when it is in their inventory). */
+    const val MAX_DATA_CHARS = 512 * 1024
+
+    /** The shop as an item, or null when it is too large for one. */
+    fun shopItem(sis: Sis, shop: Shop): ItemStack? {
+        val data = ShopYaml.toYaml(shop).saveToString()
+        if (data.length > MAX_DATA_CHARS) return null
         val item = sis.config.shopItemIcon.create()
-        item.editPersistentDataContainer { it.set(shopKey, PersistentDataType.STRING, ShopYaml.toYaml(shop).saveToString()) }
+        item.editPersistentDataContainer { it.set(shopKey, PersistentDataType.STRING, data) }
         item.named(Messages.get("itemize.shop-name", "shop" to sis.shops.displayName(shop))).glint().plainTooltip()
         return item.addLore(Messages.lines("itemize.shop-lore", "trades" to shop.trades.size))
     }

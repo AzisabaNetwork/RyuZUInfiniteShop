@@ -163,6 +163,8 @@ class TradeService(
                 amounts[box] += total
                 continue
             }
+            // More than the whole inventory can hold: no need to build thousands of stacks to find out.
+            if (total > InventorySim.capacity(copy, template)) return null to TradeStatus.INVENTORY_FULL
             for (stack in Items.stacks(template, total)) {
                 if (InventorySim.add(copy, stack) > 0) return null to TradeStatus.INVENTORY_FULL
             }
@@ -192,16 +194,19 @@ class TradeService(
         }
         inventory.storageContents = after.contents
 
+        // Counted before anything else can fail: the costs are already taken.
+        counter.add(trade, player.uniqueId, times)
         val moneyReward = trade.money(trade.rewards) * successes
         if (moneyReward > 0) Economy.deposit(player, moneyReward)
         repeat(successes) {
             trade.rewards.filterIsInstance<TradeEntry.Command>().forEach { reward ->
                 val command = reward.command.removePrefix("/")
                     .replace("<player>", player.name).replace("<uuid>", player.uniqueId.toString())
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command)
+                // A failing command must not stop the other rewards, the count or the log.
+                runCatching { Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command) }
+                    .onFailure { Bukkit.getLogger().warning("[SearchableInfiniteShop] Reward command failed: /$command: $it") }
             }
         }
-        counter.add(trade, player.uniqueId, times)
 
         ShopTradeEvent(player, shop, trade, times, successes).callEvent()
         if (TradeCompleteEvent.getHandlerList().registeredListeners.isNotEmpty()) {

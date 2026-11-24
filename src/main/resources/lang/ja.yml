@@ -2,6 +2,8 @@
 prefix: "<dark_gray>[<green>SIS</green>]</dark_gray> "
 
 shop:
+  being-edited: "<red>このショップは <player> が編集中です。少し待ってください"
+  load-failed: "<red>データを読み込めませんでした。少し待ってからもう一度試してください"
   unnamed: "<gray>ショップ <id>"
   no-trades: "<red>このショップにはまだ取引がありません"
   no-trades-admin: "<gray>スニークしながら右クリックか /sis edit <id> で取引を追加できます"
@@ -19,6 +21,7 @@ status:
   cancelled: "<red>取引できませんでした"
 
 result:
+  trade-gone: "<red>この取引は削除・変更されました"
   not_enough_items: "<red>アイテムが足りません"
   not_enough_money: "<red>お金が足りません"
   limit_reached: "<red>取引上限です"
@@ -124,6 +127,10 @@ list:
     - "<dark_gray>シフトクリック: 編集"
 
 editor:
+  citizens-unavailable: "<red>Citizens が入っていないので、Citizens の NPC を作れません"
+  citizens-linked: "<green>Citizens の NPC <id> をこのショップにつなげました"
+  itemize-too-large: "<red>このショップは大きすぎてアイテムにできません（取引を分けてください）"
+  stale-shop: "<red>ショップ <id> はこの画面を開いた後に変更・削除されました。開き直してください"
   shop-title: "編集: <shop>"
   trade-title: "取引の編集: <shop>"
   new-trade: "<green>＋ 新しい取引"
@@ -215,6 +222,7 @@ editor:
   skin-needs-mannequin: "<red>スキンを設定できるのはマネキン (mannequin) のショップだけです"
 
 itemize:
+  unreadable: "<red>このアイテムのデータを読めませんでした: <error>"
   trade-name: "<aqua>取引: </aqua><shop>"
   trade-lore:
     - ""
@@ -231,6 +239,7 @@ settings:
   saved: "<green>個人設定を保存しました"
 
 dialog:
+  unavailable: "<red>このサーバーでは入力画面を開けませんでした。管理者に連絡してください"
   save: "保存"
   settings:
     title: "個人設定"
@@ -308,6 +317,7 @@ dialog:
     ok: "わかった！"
 
 command:
+  reloaded-single: "<green>ショップ <id> を読み込み直しました（取引 <trades>件）"
   help-header: "<green>SearchableInfiniteShop</green> <gray>コマンド一覧"
   help-line: "<white><usage></white> <dark_gray>-</dark_gray> <gray><description>"
   desc:
@@ -327,6 +337,7 @@ command:
     mmid: "アイテムがMMIDで保存されるかを調べる"
     migrate: "1.x のデータを取り込む"
     reload: "設定とショップを読み込み直す"
+    reload-single: "ショップ1つだけをファイルから読み込み直す"
     save: "保存待ちのショップをすぐに書き込む"
   no-permission: "<red>権限がありません"
   player-only: "<red>プレイヤーのみ実行できます"
@@ -342,6 +353,7 @@ command:
   searchable-set: "<green><world> の <count> 件のショップの検索可否を <value> にしました"
   invalid-trade-number: "<red>取引番号は 1〜<max> で指定してください"
   limit-changed: "<green><player> の取引回数を変更しました (<count>件)"
+  limit-shared: "<yellow>うち <count>件 は全体共通の回数制限です（全員の回数が変わりました）"
   history-empty: "<red><id> の変更履歴はありません"
   history-header: "<green><id> の変更履歴 (<count>件):"
   history-line: "<gray>#<number> <white><label>"
@@ -352,6 +364,7 @@ command:
   saved: "<green>保存しました"
 
 migrate:
+  shopkeepers: "<green>Shopkeepers: 新しいショップ <created>件 / 既存に追加 <merged>件 / 取引 <trades>件 / 後回し <left>件（ワールド未読み込み）"
   started: "<yellow>1.x のデータを取り込んでいます: <folder>"
   done: "<green>完了: ショップ <shops>件 / 取引 <trades>件 / 取引回数 <counts>件 / スキップ <skipped>件 / 失敗 <failed>件"
   failed-line: "<red>  <id>: <error>"

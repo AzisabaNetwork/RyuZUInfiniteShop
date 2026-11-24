@@ -104,3 +104,10 @@ tutorial: true
 itemize:
   trade-item: { material: EMERALD }
   shop-item: { material: DIAMOND }
+
+# A Shopkeepers save.yml put into shops/ is converted on start (admin shops only, like 1.x)
+shopkeepers:
+  # true: a shop already at the same block gets the Shopkeepers trades, name and look; false: the trades are added
+  overwrite: false
+  # New shops show up in search
+  searchable: true

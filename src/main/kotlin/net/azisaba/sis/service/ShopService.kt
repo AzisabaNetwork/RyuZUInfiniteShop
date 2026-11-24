@@ -93,13 +93,23 @@ class ShopService(
     /**
      * Saves a shop after its object was edited. [respawn] = its NPC must be rebuilt (look/kind/location changed).
      */
-    fun changed(shop: Shop, actor: CommandSender?, action: String, detail: String = "", respawn: Boolean = false) {
+    fun changed(shop: Shop, actor: CommandSender?, action: String, detail: String = "", respawn: Boolean = false): Boolean {
+        // A menu or dialog opened before /sis remove, restore or reload still holds the old object: saving it would
+        // bring a deleted shop back or overwrite the newer data.
+        if (!isLive(shop)) {
+            actor?.let { Messages.send(it, "editor.stale-shop", "id" to shop.id) }
+            return false
+        }
         tradeOwners.values.removeIf { it === shop }
         shop.trades.forEach { tradeOwners[it.id] = shop }
         repository.save(shop)
         logEdit(actor, action, shop.id, detail)
         listeners.forEach { it.changed(shop, respawn) }
+        return true
     }
+
+    /** Whether [shop] is the object currently registered under its ID (not a stale copy). */
+    fun isLive(shop: Shop): Boolean = shops[shop.id] === shop
 
     fun remove(shop: Shop, actor: CommandSender?) {
         shops.remove(shop.id)
@@ -121,9 +131,10 @@ class ShopService(
         listeners.forEach { it.added(shop) }
     }
 
-    fun addTrade(shop: Shop, trade: Trade, actor: CommandSender?) {
+    fun addTrade(shop: Shop, trade: Trade, actor: CommandSender?): Boolean {
+        if (!isLive(shop)) return changed(shop, actor, "add-trade")
         shop.trades += trade
-        changed(shop, actor, "add-trade", trade.id.toString())
+        return changed(shop, actor, "add-trade", trade.id.toString())
     }
 
     fun logEdit(actor: CommandSender?, action: String, shopId: String, detail: String) {

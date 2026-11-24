@@ -21,6 +21,13 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable
 import org.bukkit.configuration.serialization.ConfigurationSerialization
 import org.bukkit.entity.EntityType
 import org.bukkit.inventory.ItemStack
+import net.azisaba.sis.migration.legacy.LegacyAttributeMigration
+import net.azisaba.sis.migration.legacy.LegacyBackupMythicIdMigration
+import net.azisaba.sis.migration.legacy.LegacyContainerMigration
+import net.azisaba.sis.migration.legacy.LegacyLeatherColorMigration
+import net.azisaba.sis.migration.legacy.LegacyMythicTypeMigration
+import net.azisaba.sis.migration.legacy.LegacyShieldColorMigration
+import net.azisaba.sis.migration.legacy.LegacySkullMigration
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -56,8 +63,8 @@ class LegacyTradeOption(val give: Boolean, val money: Double, val limit: Int, va
  * Reads the data of SearchableInfiniteShop 1.x (`shops/<world>,<x>,<y>,<z>.yml`, `options.yml`) and writes 2.x
  * shop files and trade counts. Trade IDs are kept, so counts and limits carry over.
  *
- * 1.x files must already be on the 1.21.11 item format (DataVersion 4xxx, i.e. migrated by 1.1.x with
- * `/sis migrate`); files still holding 1.15.2 items (`v: 2230`) are skipped and listed.
+ * Files of any 1.x version are read, including ones still holding 1.15.2 items (`v: 2230`): the data Bukkit drops
+ * when loading those is restored first (see [loadLegacy]).
  */
 class LegacyImporter(private val sis: Sis) {
     data class Report(
@@ -79,27 +86,53 @@ class LegacyImporter(private val sis: Sis) {
         shopDir.listFiles { f -> f.isFile && f.name.endsWith(".yml") }?.sortedBy { it.name }?.forEach { file ->
             val oldId = file.name.removeSuffix(".yml")
             runCatching {
-                val text = file.readText(Charsets.UTF_8)
-                if (!isLegacyShopFile(text)) return@runCatching report.skipped++
-                if (LEGACY_ITEM.containsMatchIn(text)) error("still has 1.15.2 items (v: 2230); run /sis migrate on 1.1.x first")
-                val yaml = YamlConfiguration().apply { loadFromString(text) }
+                val original = file.readText(Charsets.UTF_8)
+                if (!isLegacyShopFile(original)) return@runCatching report.skipped++
+                val yaml = loadLegacy(original, shopDir, file.name)
                 val shop = convert(oldId, yaml, options)
                 val target = File(sis.repository.shopDir, "${shop.id}.yml")
                 if (target.exists() && !overwrite) return@runCatching report.skipped++
                 sis.repository.saveBlocking(shop)
                 report.shops++
                 report.trades += shop.trades.size
-                for (trade in shop.trades) {
-                    options[trade.id]?.counts?.forEach { (player, count) -> counts += Triple(player, trade.id, count) }
-                }
             }.onFailure { report.failed[oldId] = it.message ?: it.toString() }
         }
+        // Counts of every trade in options.yml (trade IDs are kept), also of shops skipped because they exist:
+        // importing the same counts again just sets the same values.
+        options.forEach { (trade, option) -> option.counts.forEach { (player, count) -> counts += Triple(player, trade, count) } }
         if (counts.isNotEmpty()) {
+            val pending = File(folder, COUNTS_PENDING)
+            pending.writeText("Trade counts of options.yml were not imported yet; they are retried on the next start.\n")
             sis.counter.importLegacyBlocking(counts)
+            pending.delete()
             report.counts = counts.size
         }
         return report
     }
+
+    /**
+     * A 1.x shop file as YAML, with what Bukkit would lose on loading put back first: 1.15.2 items (MYTHIC_TYPE,
+     * heads, attributes, leather/shield colours) and items of files already loaded once by 1.21 (taken from the
+     * 1.15.2 backups in `shops/backup/`). Same steps, in the same order, as 1.x's own `/sis migrate`.
+     */
+    private fun loadLegacy(original: String, shopDir: File, fileName: String): YamlConfiguration {
+        var text = original
+        val version = rawDataVersion(text)
+        if (version < LegacyMythicTypeMigration.TO_VERSION) text = LegacyMythicTypeMigration.fixRawYaml(text)
+        if (version < LegacySkullMigration.TO_VERSION) text = LegacySkullMigration.fixRawYaml(text)
+        if (version < LegacyAttributeMigration.TO_VERSION) text = LegacyAttributeMigration.fixRawYaml(text)
+        if (version < LegacyLeatherColorMigration.TO_VERSION) text = LegacyLeatherColorMigration.fixRawYaml(text)
+        if (version < LegacyShieldColorMigration.TO_VERSION) text = LegacyShieldColorMigration.fixRawYaml(text)
+        val yaml = YamlConfiguration().apply { loadFromString(text) }
+        if (version < LegacyBackupMythicIdMigration.TO_VERSION) LegacyBackupMythicIdMigration.restore(yaml, shopDir, fileName)
+        if (version < LegacyLeatherColorMigration.TO_VERSION) LegacyLeatherColorMigration.restore(yaml, shopDir, fileName)
+        if (version < LegacyShieldColorMigration.TO_VERSION) LegacyShieldColorMigration.restore(yaml, shopDir, fileName)
+        if (version < LegacyContainerMigration.TO_VERSION) LegacyContainerMigration.restore(yaml, original, shopDir, fileName)
+        return yaml
+    }
+
+    private fun rawDataVersion(text: String): Int =
+        Regex("(?m)^data-version:\\s*(\\d+)").find(text)?.groupValues?.get(1)?.toInt() ?: 0
 
     /**
      * On the first start of 2.x in a 1.x data folder: moves the 1.x files to `legacy-1.x/` and imports them.
@@ -110,29 +143,41 @@ class LegacyImporter(private val sis: Sis) {
         val legacyFiles = shopDir.listFiles { f -> f.isFile && f.name.endsWith(".yml") }
             ?.filter { runCatching { isLegacyShopFile(it.readText(Charsets.UTF_8)) }.getOrDefault(false) }
             .orEmpty()
-        if (legacyFiles.isEmpty()) return null
-        val legacy = File(dataFolder, "legacy-1.x").apply { mkdirs() }
+        val legacy = File(dataFolder, "legacy-1.x")
+        if (legacyFiles.isEmpty()) {
+            // Moved last time, but the counts could not be written: try those again.
+            return if (File(legacy, COUNTS_PENDING).exists()) import(legacy, overwrite = false) else null
+        }
+        legacy.mkdirs()
         val legacyShops = File(legacy, "shops").apply { mkdirs() }
-        legacyFiles.forEach { it.renameTo(File(legacyShops, it.name)) }
+        legacyFiles.forEach { move(it, File(legacyShops, it.name)) }
+        // 1.x keeps the 1.15.2 copies of shop files there; they are needed to restore lost MythicMobs IDs.
+        File(shopDir, "backup").takeIf { it.isDirectory }?.let { move(it, File(legacyShops, "backup")) }
         for (name in listOf("options.yml", "limits.yml", "sign.yml", "panel.yml", "log.csv", "itemized_shops", "shop-items", "backups")) {
             val f = File(dataFolder, name)
-            if (f.exists()) f.renameTo(File(legacy, name))
+            if (f.exists()) move(f, File(legacy, name))
         }
         return import(legacy, overwrite = false)
     }
 
+    /** Moves a file or folder; fails loudly instead of leaving a half-moved data folder behind unnoticed. */
+    private fun move(from: File, to: File) {
+        if (to.exists()) error("cannot move ${from.name} to ${to.path}: it already exists")
+        java.nio.file.Files.move(from.toPath(), to.toPath())
+    }
+
     companion object {
         /** Moves a 1.x config.yml aside so the 2.x default can be written. Call before saveDefaultConfig(). */
-        fun moveLegacyConfig(dataFolder: File) {
+        fun moveLegacyConfig(dataFolder: File): Boolean {
             val config = File(dataFolder, "config.yml")
-            if (!config.exists() || !config.readText(Charsets.UTF_8).contains("AutoSaveInterval")) return
+            if (!config.exists() || !config.readText(Charsets.UTF_8).contains("AutoSaveInterval")) return false
             val legacy = File(dataFolder, "legacy-1.x").apply { mkdirs() }
-            config.renameTo(File(legacy, "config.yml"))
+            if (!config.renameTo(File(legacy, "config.yml"))) return false
             File(dataFolder, "languages").takeIf { it.exists() }?.renameTo(File(legacy, "languages"))
+            return true
         }
 
-        /** An item saved by 1.15.2 Bukkit (`v: 2230`). */
-        private val LEGACY_ITEM = Regex("^\\s+v: (1\\d{3}|2\\d{3})\\s*$", RegexOption.MULTILINE)
+        private const val COUNTS_PENDING = "counts-pending.txt"
     }
 
     /**
@@ -172,7 +217,8 @@ class LegacyImporter(private val sis: Sis) {
     private fun isLegacyShopFile(text: String): Boolean =
         text.lineSequence().any { it.startsWith("Npc:") } && text.lineSequence().none { it.startsWith("format:") }
 
-    private fun registerAliases() {
+    /** Lets Bukkit read the 1.x classes in YAML (MythicItem, TradeOption). */
+    fun registerAliases() {
         ConfigurationSerialization.registerClass(LegacyMythicItem::class.java, "ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.item.MythicItem")
         ConfigurationSerialization.registerClass(LegacyTradeOption::class.java, "ryuzuinfiniteshop.ryuzuinfiniteshop.data.system.TradeOption")
     }
@@ -220,6 +266,29 @@ class LegacyImporter(private val sis: Sis) {
         )
     }
 
+    /**
+     * A shop from the data of a 1.x shop item ("compression gem": its shop file without trades), placed at [at]
+     * under [id] with [trades].
+     */
+    fun shopFromGem(shopData: String, id: String, at: ShopLocation, trades: List<Trade>): Shop {
+        registerAliases()
+        val yaml = YamlConfiguration().apply { loadFromString(shopData) }
+        val shop = convert("${at.world},${at.blockX},${at.blockY},${at.blockZ}", yaml, emptyMap())
+        return Shop(id, shop.name, at, shop.npc, trades.toMutableList(), shop.locked, shop.searchable, shop.nameVisible, shop.lookAtPlayer)
+    }
+
+    /** A trade of a 1.x shop item (`give` / `take` lists, optional `uuid`), with a fresh ID. */
+    fun tradeFromGem(map: Map<*, *>): Trade? {
+        registerAliases()
+        return convertTrade(map, emptyMap())?.copy(id = UUID.randomUUID())
+    }
+
+    /** Old item lists as YAML text (`ShopItemStacks: [...]`, the oldest shop item format). */
+    fun itemListFromGem(yamlText: String): List<Any?> {
+        registerAliases()
+        return YamlConfiguration().apply { loadFromString(yamlText) }.getList("ShopItemStacks").orEmpty()
+    }
+
     private fun legacyName(text: String): String {
         if (text.isBlank()) return ""
         val component = LegacyComponentSerializer.legacySection().deserialize(text)
@@ -235,7 +304,7 @@ class LegacyImporter(private val sis: Sis) {
         if (costs.isEmpty() && rewards.isEmpty()) return null
         val tradeOptions = TradeOptions(
             limit = option?.limit?.coerceAtLeast(0) ?: 0,
-            chance = option?.rate?.coerceIn(1, 100) ?: 100,
+            chance = option?.rate?.coerceIn(0, 100) ?: 100,
             hideChance = option?.hide ?: false,
         )
         return Trade(id, costs, rewards, tradeOptions)
@@ -294,7 +363,7 @@ class LegacyImporter(private val sis: Sis) {
         val zombieLike = type in setOf(EntityType.ZOMBIE, EntityType.HUSK, EntityType.DROWNED, EntityType.ZOMBIE_VILLAGER, EntityType.ZOMBIFIED_PIGLIN, EntityType.PIGLIN)
         if (o.contains("Adult") && !o.getBoolean("Adult", true)) tags += if (zombieLike) "IsBaby:1b" else "Age:-24000"
         if (type == EntityType.VILLAGER || type == EntityType.ZOMBIE_VILLAGER) {
-            val profession = o.getString("Profession", "NONE")!!.lowercase(Locale.ROOT)
+            val profession = (o.getString("Profession") ?: o.getString("prof") ?: "NONE").lowercase(Locale.ROOT)
             val biome = villagerType(o.getString("Biome", "PLAINS")!!)
             val level = o.getInt("Level", 1).coerceIn(1, 5)
             tags += "VillagerData:{profession:\"minecraft:$profession\",type:\"minecraft:$biome\",level:$level}"
@@ -319,8 +388,25 @@ class LegacyImporter(private val sis: Sis) {
                 val variants = listOf("RED", "BLUE", "GREEN", "CYAN", "GRAY")
                 tags += "Variant:${variants.indexOf(o.getString("Color", "RED")!!.uppercase(Locale.ROOT)).coerceAtLeast(0)}"
             }
-            EntityType.SHEEP -> dye(o.getString("Color"))?.let { tags += "Color:${it}b" }
+            EntityType.SHEEP -> {
+                dye(o.getString("Color"))?.let { tags += "Color:${it}b" }
+                if (o.getBoolean("OptionalInfo", false)) tags += "Sheared:1b"
+            }
             EntityType.WOLF -> dye(o.getString("Color"))?.let { tags += "CollarColor:${it}b" }
+            EntityType.SHULKER -> dye(o.getString("Color"))?.let { tags += "Color:${it}b" }
+            EntityType.SNOW_GOLEM -> if (o.getBoolean("Derp", false)) tags += "Pumpkin:0b"
+            EntityType.AXOLOTL -> {
+                val variants = listOf("LUCY", "WILD", "GOLD", "CYAN", "BLUE")
+                tags += "Variant:${variants.indexOf(o.getString("Color", "LUCY")!!.uppercase(Locale.ROOT)).coerceAtLeast(0)}"
+            }
+            EntityType.TROPICAL_FISH -> {
+                // Variant = size | pattern << 8 | body colour << 16 | pattern colour << 24 (patterns 0-5 per size)
+                val patterns = listOf("KOB", "SUNSTREAK", "SNOOPER", "DASHER", "BRINELY", "SPOTTY", "FLOPPER", "STRIPEY", "GLITTER", "BLOCKFISH", "BETTY", "CLAYFISH")
+                val p = patterns.indexOf(o.getString("Pattern", "KOB")!!.uppercase(Locale.ROOT)).coerceAtLeast(0)
+                val body = dye(o.getString("BodyColor", "RED")) ?: DyeColor.RED.ordinal
+                val patternColor = dye(o.getString("PatternColor", "RED")) ?: DyeColor.RED.ordinal
+                tags += "Variant:${(p / 6) or ((p % 6) shl 8) or (body shl 16) or (patternColor shl 24)}"
+            }
             else -> Unit
         }
         return "{${tags.joinToString(",")}}"

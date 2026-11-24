@@ -42,7 +42,7 @@ data class TradeOptions(
     val limit: Int = 0,
     val limitScope: LimitScope = LimitScope.PLAYER,
     val reset: ResetPeriod = ResetPeriod.NEVER,
-    /** Success chance in percent (1..100). Costs are always taken; rewards are given on success. */
+    /** Success chance in percent (0..100; 0 = never succeeds, as in 1.x). Costs are always taken; rewards are given on success. */
     val chance: Int = 100,
     val hideChance: Boolean = false,
     /** Permission the player needs for this trade, or null. */
@@ -50,7 +50,7 @@ data class TradeOptions(
 ) {
     init {
         require(limit >= 0) { "limit must not be negative" }
-        require(chance in 1..100) { "chance must be 1..100" }
+        require(chance in 0..100) { "chance must be 0..100" }
     }
 
     val hasLimit: Boolean get() = limit > 0

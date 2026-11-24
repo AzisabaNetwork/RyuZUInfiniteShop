@@ -54,14 +54,30 @@ class Dialogs(private val sis: Sis) {
         onConfirm: (DialogResponseView, Player) -> Unit,
     ) {
         from?.suspendForDialog()
-        val yes = button(confirmLabel) { view, p -> onConfirm(view, p) }
-        val no = button(Messages.get("dialog.cancel")) { _, _ -> from?.open() }
-        val dialog = Dialog.create { factory ->
-            factory.empty()
-                .base(DialogBase.builder(title).body(body).inputs(inputs).canCloseWithEscape(true).afterAction(DialogBase.DialogAfterAction.CLOSE).build())
-                .type(DialogType.confirmation(yes, no))
+        val shown = display(player) {
+            val yes = button(confirmLabel) { view, p -> onConfirm(view, p) }
+            val no = button(Messages.get("dialog.cancel")) { _, _ -> from?.open() }
+            Dialog.create { factory ->
+                factory.empty()
+                    .base(DialogBase.builder(title).body(body).inputs(inputs).canCloseWithEscape(true).afterAction(DialogBase.DialogAfterAction.CLOSE).build())
+                    .type(DialogType.confirmation(yes, no))
+            }
         }
-        player.showDialog(dialog)
+        if (!shown) from?.open()
+    }
+
+    /**
+     * Shows a dialog. The Dialog API is still experimental in Paper; if it fails on this server version the player
+     * gets a message instead of an internal error.
+     */
+    private fun display(player: Player, build: () -> Dialog): Boolean = try {
+        player.showDialog(build())
+        true
+    } catch (e: Throwable) {
+        if (e is VirtualMachineError) throw e
+        sis.plugin.logger.warning("Could not show a dialog: $e")
+        Messages.send(player, "dialog.unavailable")
+        false
     }
 
     private fun text(key: String, label: String, initial: String, max: Int = 256, width: Int = 300) =
@@ -92,6 +108,10 @@ class Dialogs(private val sis: Sis) {
                     .initial((Math.round(shop.location.yaw / 15f) * 15f).coerceIn(-180f, 180f)).width(300).build(),
             ),
         ) { view, p ->
+            if (!sis.shops.isLive(shop)) {
+                Messages.send(p, "editor.stale-shop", "id" to shop.id)
+                return@show
+            }
             val yaw = view.getFloat("yaw") ?: shop.location.yaw
             val invisible = view.getBoolean("invisible") ?: shop.invisible
             val respawn = yaw != shop.location.yaw || invisible != shop.invisible
@@ -119,8 +139,17 @@ class Dialogs(private val sis: Sis) {
                 text("skin", "dialog.npc.skin", "", 16, 200),
             ),
         ) { view, p ->
+            if (!sis.shops.isLive(shop)) {
+                Messages.send(p, "editor.stale-shop", "id" to shop.id)
+                return@show
+            }
             val input = view.getText("kind")?.trim().orEmpty()
-            val spec = NpcSpecs.parse(input)
+            val spec = NpcSpecs.parse(input)?.let { parsed ->
+                if (parsed is net.azisaba.sis.model.NpcSpec.Citizens && parsed.ref == NpcSpecs.NEW_CITIZENS) {
+                    val at = shop.location.toBukkit()
+                    if (at == null) null else net.azisaba.sis.npc.CitizensBridge.create(at, Messages.plain(sis.shops.displayName(shop)))
+                } else parsed
+            }
             if (spec == null) {
                 Messages.send(p, "editor.invalid-npc", "input" to input)
                 from?.open()
@@ -140,10 +169,10 @@ class Dialogs(private val sis: Sis) {
         show(
             player, from, Messages.get("dialog.options.title"),
             inputs = listOf(
-                text("limit", "dialog.options.limit", options.limit.toString(), 9, 120),
+                text("limit", "dialog.options.limit", options.limit.toString(), 10, 120),
                 options("scope", "dialog.options.scope", LimitScope.entries.toTypedArray(), options.limitScope, "dialog.options.scopes"),
                 options("reset", "dialog.options.reset", ResetPeriod.entries.toTypedArray(), options.reset, "dialog.options.resets"),
-                DialogInput.numberRange("chance", Messages.get("dialog.options.chance"), 1f, 100f).step(1f).initial(options.chance.toFloat()).width(300).build(),
+                DialogInput.numberRange("chance", Messages.get("dialog.options.chance"), 0f, 100f).step(1f).initial(options.chance.toFloat()).width(300).build(),
                 bool("hideChance", "dialog.options.hide-chance", options.hideChance),
                 text("permission", "dialog.options.permission", options.permission.orEmpty(), 128),
             ),
@@ -158,7 +187,7 @@ class Dialogs(private val sis: Sis) {
                 limit = limit,
                 limitScope = view.getText("scope")?.let { runCatching { LimitScope.valueOf(it) }.getOrNull() } ?: options.limitScope,
                 reset = view.getText("reset")?.let { runCatching { ResetPeriod.valueOf(it) }.getOrNull() } ?: options.reset,
-                chance = (view.getFloat("chance") ?: options.chance.toFloat()).toInt().coerceIn(1, 100),
+                chance = (view.getFloat("chance") ?: options.chance.toFloat()).toInt().coerceIn(0, 100),
                 hideChance = view.getBoolean("hideChance") ?: options.hideChance,
                 permission = view.getText("permission")?.trim()?.takeIf { it.isNotEmpty() },
             )
@@ -246,22 +275,36 @@ class Dialogs(private val sis: Sis) {
     }
 
     fun tutorial(player: Player, then: () -> Unit) {
-        val ok = button(Messages.get("dialog.tutorial.ok"), 200) { view, p ->
+        val ok = try {
+            tutorialButton(then)
+        } catch (e: Throwable) {
+            if (e is VirtualMachineError) throw e
+            sis.plugin.logger.warning("Could not show the tutorial: $e")
+            then()
+            return
+        }
+        val shown = display(player) {
+            Dialog.create { factory ->
+                factory.empty()
+                    .base(
+                        DialogBase.builder(Messages.get("dialog.tutorial.title"))
+                            .body(Messages.lines("dialog.tutorial.body").map { DialogBody.plainMessage(it, 300) })
+                            .inputs(listOf(bool("hide", "dialog.tutorial.hide", true)))
+                            .canCloseWithEscape(true)
+                            .build(),
+                    )
+                    .type(DialogType.notice(ok))
+            }
+        }
+        // Without the tutorial the player still gets the shop.
+        if (!shown) then()
+    }
+
+    private fun tutorialButton(then: () -> Unit): ActionButton {
+        return button(Messages.get("dialog.tutorial.ok"), 200) { view, p ->
             if (view.getBoolean("hide") == true) sis.settings.set(p.uniqueId, sis.settings[p.uniqueId].copy(tutorialHidden = true))
             then()
         }
-        val dialog = Dialog.create { factory ->
-            factory.empty()
-                .base(
-                    DialogBase.builder(Messages.get("dialog.tutorial.title"))
-                        .body(Messages.lines("dialog.tutorial.body").map { DialogBody.plainMessage(it, 300) })
-                        .inputs(listOf(bool("hide", "dialog.tutorial.hide", true)))
-                        .canCloseWithEscape(true)
-                        .build(),
-                )
-                .type(DialogType.notice(ok))
-        }
-        player.showDialog(dialog)
     }
 
 }

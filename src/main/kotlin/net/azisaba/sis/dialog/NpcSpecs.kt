@@ -23,20 +23,29 @@ object NpcSpecs {
             lower.startsWith("mythic:") -> text.substring(7).takeIf { id ->
                 id.isNotBlank() && (!MythicInstanceProvider.isLoaded() || MythicInstanceProvider.getInstance().existsMythicMob(id))
             }?.let { NpcSpec.Mythic(it) }
+            // "citizens" alone: a new Citizens NPC is created for the shop (see [NEW_CITIZENS])
+            lower == "citizens" || lower == "citizens:" || lower == "citizens:new" -> NpcSpec.Citizens(NEW_CITIZENS)
             lower.startsWith("citizens:") -> text.substring(9).trim().takeIf { it.isNotEmpty() }?.let { NpcSpec.Citizens(it) }
             else -> entityType(lower)?.let { NpcSpec.Vanilla(it) }
         }
     }
 
+    /** Ref of a Citizens spec meaning "create one" (replaced by the new NPC's ID before the shop is saved). */
+    const val NEW_CITIZENS = "new"
+
+    /** Entities that can stand at a shop: like 1.x any spawnable entity, also non-living ones (end crystals, ...). */
+    private fun usable(type: EntityType) = type != EntityType.UNKNOWN && type.isSpawnable && type != EntityType.PLAYER
+
     fun entityType(name: String): EntityType? {
         val key = name.removePrefix("minecraft:").lowercase(Locale.ROOT)
-        return EntityType.entries.firstOrNull { it != EntityType.UNKNOWN && it.isSpawnable && it.isAlive && (it.key.key == key || it.name.equals(key, true)) }
+        return EntityType.entries.firstOrNull { usable(it) && (it.key.key == key || it.name.equals(key, true)) }
             ?: EntityType.entries.firstOrNull { it == EntityType.MANNEQUIN && key == "mannequin" }
     }
 
     fun suggestions(): List<String> {
-        val result = EntityType.entries.filter { it != EntityType.UNKNOWN && it.isSpawnable && it.isAlive }.map { it.key.key }.toMutableList()
+        val result = EntityType.entries.filter { usable(it) }.map { it.key.key }.toMutableList()
         result += "block"
+        result += "citizens"
         result += "citizens:"
         if (MythicInstanceProvider.isLoaded()) result += MythicInstanceProvider.getInstance().mythicMobNames.map { "mythic:$it" }
         return result

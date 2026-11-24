@@ -42,6 +42,7 @@ abstract class Menu(val viewer: Player, private val rows: Int) : InventoryHolder
     /** Closes the inventory for a dialog; [open] brings the menu back. */
     fun suspendForDialog() {
         suspended = true
+        (this as? ShopEditing)?.let { EditLocks.dialogOpened(viewer, it.editedShop.id) }
         if (viewer.openInventory.topInventory.holder === this) viewer.closeInventory()
     }
 
@@ -53,6 +54,8 @@ abstract class Menu(val viewer: Player, private val rows: Int) : InventoryHolder
         renderedTitle = title
         draw()
         viewer.openInventory(inv)
+        EditLocks.menuOpened(viewer)
+        (this as? ShopEditing)?.let { EditLocks.started(viewer, it.editedShop) }
     }
 
     /** Draws again; reopens when the title changed (titles cannot be changed in place). */
@@ -122,12 +125,19 @@ abstract class Menu(val viewer: Player, private val rows: Int) : InventoryHolder
             }
             when (event.action) {
                 InventoryAction.MOVE_TO_OTHER_INVENTORY -> onShiftIn(event)
-                InventoryAction.COLLECT_TO_CURSOR -> event.isCancelled = editableSlots.isEmpty()
+                // Collecting would also pull items out of this menu (editable slots hold copies the player must not get).
+                InventoryAction.COLLECT_TO_CURSOR -> event.isCancelled = true
                 else -> Unit
             }
             return
         }
-        if (event.slot in editableSlots && event.click != ClickType.DOUBLE_CLICK) {
+        // A fast double click arrives as a normal click followed by DOUBLE_CLICK: only the first one is a button press
+        // (otherwise "x64" trades 128 times).
+        if (event.click == ClickType.DOUBLE_CLICK) {
+            event.isCancelled = true
+            return
+        }
+        if (event.slot in editableSlots) {
             onEditableClick(event)
             return
         }
@@ -140,7 +150,9 @@ abstract class Menu(val viewer: Player, private val rows: Int) : InventoryHolder
 
     internal fun handleDrag(event: InventoryDragEvent) {
         val topSize = event.view.topInventory.size
-        if (event.rawSlots.any { it < topSize && it !in editableSlots }) event.isCancelled = true
+        // Editable slots take copies through onEditableClick; a drag would move the real items into the menu,
+        // where they vanish when it closes.
+        if (event.rawSlots.any { it < topSize }) event.isCancelled = true
     }
 
     data class Click(val type: ClickType, val slot: Int, val event: InventoryClickEvent) {
@@ -161,6 +173,12 @@ class MenuListener : Listener {
     fun onDrag(event: InventoryDragEvent) {
         val menu = event.view.topInventory.holder as? Menu ?: return
         menu.handleDrag(event)
+    }
+
+    /** Any inventory opened (also another plugin's): the player left the dialog of an editor. */
+    @EventHandler
+    fun onOpen(event: org.bukkit.event.inventory.InventoryOpenEvent) {
+        (event.player as? Player)?.let(EditLocks::menuOpened)
     }
 
     @EventHandler

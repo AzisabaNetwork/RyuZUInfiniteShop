@@ -25,6 +25,11 @@ object Items {
 
     private val generated = ConcurrentHashMap<String, ItemStack>()
 
+    /** Normalized forms of trade entry items (entries are immutable; keyed by identity). */
+    private class Normalized(val item: ItemStack?)
+    private val normalizedEntries: MutableMap<ItemStack, Normalized> =
+        java.util.Collections.synchronizedMap(java.util.WeakHashMap<ItemStack, Normalized>())
+
     fun clearCache() {
         generated.clear()
         MythicInstanceProvider.invalidateCaches()
@@ -83,7 +88,19 @@ object Items {
     fun matches(entry: TradeEntry, stack: ItemStack?): Boolean {
         if (stack == null || stack.type.isAir) return false
         return when (entry) {
-            is TradeEntry.Item -> ItemNormalizer.isSimilar(entry.item, stack)
+            is TradeEntry.Item -> {
+                // Same result as ItemNormalizer.isSimilar, but the entry's normalized form is computed once
+                // instead of for every slot of every check.
+                val item = entry.item
+                if (item.isSimilar(stack)) return true
+                if (item.type != stack.type) return false
+                // The value must not reference the key, or the weak map never drops it: "unchanged" is stored as null.
+                val normalizedEntry = normalizedEntries.computeIfAbsent(item) { key ->
+                    Normalized(ItemNormalizer.normalize(key).takeUnless { it === key })
+                }.item ?: item
+                val normalizedStack = ItemNormalizer.normalize(stack)
+                (normalizedEntry !== item || normalizedStack !== stack) && normalizedEntry.isSimilar(normalizedStack)
+            }
             is TradeEntry.Mythic -> {
                 if (mythicId(stack) != entry.id) return false
                 if (!mythicStrict) return true

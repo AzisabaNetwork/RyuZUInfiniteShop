@@ -37,8 +37,14 @@ class SearchableInfiniteShop : JavaPlugin() {
     private lateinit var searchIndex: SearchIndex
 
     override fun onEnable() {
-        LegacyImporter.moveLegacyConfig(dataFolder)
+        val legacyConfig = LegacyImporter.moveLegacyConfig(dataFolder)
         saveDefaultConfig()
+        if (legacyConfig) {
+            val keys = net.azisaba.sis.migration.LegacyConfig.carryOver(
+                java.io.File(dataFolder, "legacy-1.x/config.yml"), java.io.File(dataFolder, "panel.yml"), java.io.File(dataFolder, "config.yml"),
+            )
+            if (keys.isNotEmpty()) logger.info("Took over 1.x settings: ${keys.joinToString()}")
+        }
         applyConfig()
         MythicInstanceProvider.init(this)
 
@@ -76,6 +82,8 @@ class SearchableInfiniteShop : JavaPlugin() {
 
         val loaded = sis.shops.load()
         logger.info("Loaded ${loaded.shops.size} shops" + if (loaded.failures.isNotEmpty()) " (${loaded.failures.size} failed)" else "")
+        // After the worlds of other plugins (Multiverse) are loaded.
+        server.scheduler.runTask(this, Runnable { importShopkeepers(null) })
         sis.counter.refreshGlobalBlocking()
         Bukkit.getOnlinePlayers().forEach { p ->
             sis.counter.loadPlayerAsync(p.uniqueId)
@@ -106,7 +114,7 @@ class SearchableInfiniteShop : JavaPlugin() {
 
     override fun onDisable() {
         if (!::opener.isInitialized) return
-        Bukkit.getOnlinePlayers().forEach { p -> if (p.openInventory.topInventory.holder is net.azisaba.sis.gui.Menu) p.closeInventory() }
+        closeMenus()
         sis.npcs.despawnAll()
         runCatching { sis.repository.close() }.onFailure { logger.severe("Could not write shops: $it") }
         runCatching { sis.db.close() }
@@ -120,8 +128,29 @@ class SearchableInfiniteShop : JavaPlugin() {
         Items.isExcluded = sis.config::isMythicExcluded
     }
 
+    /** Converts shops/save.yml of Shopkeepers, if there is one. */
+    fun importShopkeepers(sender: CommandSender?) {
+        val file = net.azisaba.sis.migration.ShopkeepersImporter.fileIn(dataFolder)
+        val report = runCatching { net.azisaba.sis.migration.ShopkeepersImporter(sis).import(file, sis.config.shopkeepersOverwrite, sis.config.shopkeepersSearchable) }
+            .onFailure { logger.log(java.util.logging.Level.SEVERE, "Could not convert Shopkeepers' save.yml", it) }
+            .getOrNull() ?: return
+        val text = "Shopkeepers: ${report.created} shops created, ${report.merged} merged, ${report.trades} trades, ${report.left} left for later (world not loaded)"
+        logger.info(text)
+        sender?.let { Messages.send(it, "migrate.shopkeepers", "created" to report.created, "merged" to report.merged, "trades" to report.trades, "left" to report.left) }
+    }
+
+    /** Closes every SIS menu; edits they save on close (equipment) are written right away. */
+    private fun closeMenus() {
+        sis.npcs.closing = true
+        try {
+            Bukkit.getOnlinePlayers().forEach { p -> if (p.openInventory.topInventory.holder is net.azisaba.sis.gui.Menu) p.closeInventory() }
+        } finally {
+            sis.npcs.closing = false
+        }
+    }
+
     private fun reload(sender: CommandSender) {
-        Bukkit.getOnlinePlayers().forEach { p -> if (p.openInventory.topInventory.holder is net.azisaba.sis.gui.Menu) p.closeInventory() }
+        closeMenus()
         // storage.* and limits.* need a restart; everything else is applied here.
         applyConfig()
         sis.repository.flush()

@@ -14,6 +14,7 @@ import net.azisaba.sis.model.NpcSpec
 import net.azisaba.sis.model.Shop
 import net.azisaba.sis.model.ShopLocation
 import net.azisaba.sis.model.Trade
+import net.azisaba.sis.storage.ShopRepository
 import org.bukkit.Bukkit
 import org.bukkit.OfflinePlayer
 import org.bukkit.command.Command
@@ -43,6 +44,7 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
         Sub("mmid", "sis.admin", "mmid [shop]") { s, a -> mmid(s, a) },
         Sub("migrate", "sis.admin", "migrate [folder] [--overwrite]") { s, a -> migrate(s, a) },
         Sub("reload", "sis.admin", "reload") { s, _ -> reload(s) },
+        Sub("reload-single", "sis.admin", "reload-single <shop>") { s, a -> reloadSingle(s, a) },
         Sub("save", "sis.admin", "save") { s, _ -> sis.repository.flush(); Messages.send(s, "command.saved") },
     )
 
@@ -111,7 +113,10 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
         at.yaw = Math.round(at.yaw / 45f) * 45f
         at.pitch = 0f
         val location = ShopLocation.of(at)
-        val shop = Shop(sis.shops.newId(location), "", location, spec)
+        val npc = if (spec is NpcSpec.Citizens && spec.ref == NpcSpecs.NEW_CITIZENS) {
+            net.azisaba.sis.npc.CitizensBridge.create(at, "") ?: return Messages.send(p, "editor.citizens-unavailable")
+        } else spec
+        val shop = Shop(sis.shops.newId(location), "", location, npc)
         sis.shops.create(shop, p)
         Messages.send(p, "command.created", "id" to shop.id)
         EditorMenus.openShopEditor(sis, p, shop)
@@ -163,15 +168,44 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
                 else -> trades.forEach { sis.counter.set(it, id, sis.counter.count(it, id) + count!!) }
             }
             Messages.send(sender, "command.limit-changed", "player" to (target.name ?: id.toString()), "count" to trades.size)
-            if (!online) sis.counter.unloadPlayer(id)
+            val shared = trades.count { it.options.limitScope == net.azisaba.sis.model.LimitScope.GLOBAL }
+            if (shared > 0) Messages.send(sender, "command.limit-shared", "count" to shared)
+            // Checked now, not when the command started: the player may have logged in meanwhile.
+            if (Bukkit.getPlayer(id) == null) sis.counter.unloadPlayer(id)
         }
         // Offline players: read their counts first so "add" adds to the real value.
         if (online || sis.counter.isLoaded(id)) apply()
         else sis.counter.loadPlayerAsync(id).thenRun { Bukkit.getScheduler().runTask(sis.plugin, Runnable { apply() }) }
     }
 
+    /** A shop ID for history files: the registered spelling, and nothing that could leave the history folder. */
+    private fun historyId(sender: CommandSender, raw: String?): String? {
+        if (raw == null) return null.also { Messages.send(sender, "command.shop-required") }
+        val id = sis.shops.get(raw)?.id ?: raw
+        if (!ShopRepository.isValidId(id)) return null.also { Messages.send(sender, "command.shop-not-found", "id" to raw) }
+        return id
+    }
+
+    /** Reads one shop file again (after editing it by hand), without reloading everything. */
+    private fun reloadSingle(sender: CommandSender, args: List<String>) {
+        val raw = args.getOrNull(0) ?: return Messages.send(sender, "command.shop-required")
+        val id = sis.shops.get(raw)?.id ?: raw
+        if (!ShopRepository.isValidId(id)) return Messages.send(sender, "command.shop-not-found", "id" to raw)
+        val file = java.io.File(sis.repository.shopDir, "$id.yml")
+        if (!file.isFile) return Messages.send(sender, "command.shop-not-found", "id" to raw)
+        sis.repository.flush() // a pending write of the old version must not land after the read
+        val shop = sis.repository.load(id, file)
+        // Screens showing the old version are closed (they would keep selling it).
+        Bukkit.getOnlinePlayers().forEach { p ->
+            val menu = p.openInventory.topInventory.holder
+            if ((menu as? net.azisaba.sis.gui.TradeMenu)?.shows(shop) == true || (menu as? net.azisaba.sis.gui.ShopEditing)?.editedShop?.id == id) p.closeInventory()
+        }
+        sis.shops.replace(shop, sender, "reload-single")
+        Messages.send(sender, "command.reloaded-single", "id" to id, "trades" to shop.trades.size)
+    }
+
     private fun history(sender: CommandSender, args: List<String>) {
-        val id = args.getOrNull(0) ?: return Messages.send(sender, "command.shop-required")
+        val id = historyId(sender, args.getOrNull(0)) ?: return
         val entries = sis.repository.history(id)
         if (entries.isEmpty()) return Messages.send(sender, "command.history-empty", "id" to id)
         Messages.send(sender, "command.history-header", "id" to id, "count" to entries.size)
@@ -179,7 +213,7 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
     }
 
     private fun restore(sender: CommandSender, args: List<String>) {
-        val id = args.getOrNull(0) ?: return Messages.send(sender, "command.shop-required")
+        val id = historyId(sender, args.getOrNull(0)) ?: return
         val entries = sis.repository.history(id)
         val n = args.getOrNull(1)?.toIntOrNull()?.takeIf { it in 1..entries.size }
             ?: return Messages.send(sender, "command.history-invalid", "max" to entries.size)
@@ -219,6 +253,9 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
         sis.shops.load()
         sis.npcs.despawnAll()
         sis.npcs.spawnLoaded()
+        net.azisaba.sis.migration.ShopkeepersImporter(sis)
+            .import(java.io.File(folder, "shops/save.yml"), sis.config.shopkeepersOverwrite, sis.config.shopkeepersSearchable)
+            ?.let { r -> Messages.send(sender, "migrate.shopkeepers", "created" to r.created, "merged" to r.merged, "trades" to r.trades, "left" to r.left) }
     }
 
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>): List<String> {
@@ -227,7 +264,7 @@ class SisCommand(private val sis: Sis, private val opener: ShopOpener, private v
         if (!sender.hasPermission(sub.permission)) return emptyList()
         val last = args.last()
         val options: List<String> = when (sub.name) {
-            "edit", "open", "remove", "tp", "move", "history", "restore", "mmid" -> if (args.size == 2) sis.shops.ids() else if (sub.name == "open" && args.size == 3) Bukkit.getOnlinePlayers().map { it.name } else emptyList()
+            "edit", "open", "remove", "tp", "move", "history", "restore", "mmid", "reload-single" -> if (args.size == 2) sis.shops.ids() else if (sub.name == "open" && args.size == 3) Bukkit.getOnlinePlayers().map { it.name } else emptyList()
             "create" -> if (args.size == 2) NpcSpecs.suggestions() else emptyList()
             "searchable" -> when (args.size) { 2 -> Bukkit.getWorlds().map { it.name }; 3 -> listOf("true", "false"); else -> emptyList() }
             "limit" -> when (args.size) {

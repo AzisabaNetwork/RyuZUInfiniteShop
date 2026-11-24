@@ -20,6 +20,7 @@ import java.util.zip.GZIPOutputStream
  * so a burst of edits never writes out of order and never blocks the server.
  */
 class ShopRepository(dataFolder: File, private val logger: Logger, private val historyKeep: () -> Int) {
+
     val shopDir = File(dataFolder, "shops")
     val historyDir = File(dataFolder, "history")
     private val writer: ExecutorService = Executors.newSingleThreadExecutor { Thread(it, "SIS-ShopWriter").apply { isDaemon = true } }
@@ -123,6 +124,11 @@ class ShopRepository(dataFolder: File, private val logger: Logger, private val h
     }
 
     companion object {
+        private val ID = Regex("[A-Za-z0-9_-]+")
+
+        /** IDs made by [net.azisaba.sis.service.ShopService.newId] (no path separators or "..") */
+        fun isValidId(id: String): Boolean = ID.matches(id)
+
         private val STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
     }
 }

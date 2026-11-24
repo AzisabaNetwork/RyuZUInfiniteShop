@@ -96,4 +96,15 @@ class ShopYamlTest {
         assertTrue("save" !in result.failures)
         repo.close()
     }
+
+    @Test
+    fun `an unreadable cost fails the trade instead of making it free`() {
+        val raw = mapOf(
+            "id" to java.util.UUID.randomUUID().toString(),
+            "costs" to listOf(mapOf("type" to "item", "amount" to 3, "item" to "not an item")),
+            "rewards" to listOf(mapOf("type" to "mythic", "id" to "sword", "amount" to 1)),
+        )
+        val error = runCatching { ShopYaml.tradeFromMap(raw) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException && error.message!!.contains("cost #1"), error.toString())
+    }
 }

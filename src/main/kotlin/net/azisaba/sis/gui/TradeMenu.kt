@@ -257,8 +257,28 @@ class TradeMenu(
 
     private fun canTrade(shop: Shop): Boolean = fixedShop != null || sis.config.allowRemoteTrade || viewer.hasPermission("sis.admin")
 
+    /** Whether this screen shows trades of [shop]. */
+    fun shows(shop: Shop): Boolean = fixedShop?.id == shop.id || results.any { it.first.id == shop.id }
+
     private fun buy(pair: Pair<Shop, Trade>, times: Int) {
-        val (shop, trade) = pair
+        if (EditLocks.refuse(viewer, pair.first)) {
+            fail()
+            return
+        }
+        // The menu may have been open while the shop was edited, removed or reloaded: trade what the shop has now.
+        val shop = sis.shops.get(pair.first.id)?.takeIf { it.id == pair.first.id }
+        val trade = shop?.trades?.firstOrNull { it.id == pair.second.id }
+        if (shop == null || trade == null) {
+            Messages.send(viewer, "result.trade-gone")
+            fail()
+            if (fixedShop != null && (shop == null || shop !== fixedShop)) viewer.closeInventory() else refresh()
+            return
+        }
+        if (fixedShop != null && shop !== fixedShop) {
+            // Reloaded or restored: show the current version.
+            TradeMenu(sis, viewer, shop, adminView = adminView, unlocked = unlocked).also { it.parent = parent }.open()
+            return
+        }
         val outcome = sis.trades.execute(viewer, shop, trade, times, bypassLock = unlocked)
         report(outcome)
         refresh()

@@ -185,4 +185,57 @@ class LegacyImporterTest {
         assertTrue("VillagerData:{profession:\"minecraft:farmer\",type:\"minecraft:snow\",level:3}" in snbt, snbt)
         assertTrue("Age:-24000" in snbt, snbt)
     }
+
+    @Test
+    fun `1x 15 2 items and looks are carried over`() {
+        val legacy = File(dir, "old").apply { mkdirs() }
+        File(legacy, "shops").mkdirs()
+        // {MYTHIC_TYPE:"sigenpickaxe10SAC"} from a real 1.15.2 shop file
+        val internal = "H4sIAAAAAAAA/+NiYOBg4PaNDPHwdI4PiQxwZRAszkxPzSvITM5OrEg1NAh2dGYAAIefIIUlAAAA"
+        File(legacy, "shops/world,1,64,2.yml").writeText(
+            """
+            |Npc:
+            |  Options:
+            |    EntityType: SNOW_GOLEM
+            |    Derp: true
+            |  Status:
+            |    Yaw: 0.0
+            |Trades:
+            |- give:
+            |  - ==: org.bukkit.inventory.ItemStack
+            |    v: 2230
+            |    type: DIAMOND_PICKAXE
+            |    amount: 3
+            |    meta:
+            |      ==: ItemMeta
+            |      meta-type: UNSPECIFIC
+            |      internal: $internal
+            |  take:
+            |  - ==: org.bukkit.inventory.ItemStack
+            |    v: 2230
+            |    type: DIRT
+            |    amount: 5
+            |  uuid: 11111111-1111-1111-1111-111111111111
+            """.trimMargin() + "\n",
+        )
+        val report = LegacyImporter(sis).import(legacy, overwrite = false)
+        assertEquals(1, report.shops, report.failed.toString())
+        val shop = sis.repository.load("world_1_64_2")
+        val trade = shop.trades.single()
+        assertEquals(TradeEntry.Mythic("sigenpickaxe10SAC", 3), trade.rewards.single())
+        assertEquals(5, (trade.costs.single() as TradeEntry.Item).amount)
+        assertEquals(EntityType.SNOW_GOLEM, (shop.npc as NpcSpec.Vanilla).type)
+        // MockBukkit cannot build entity snapshots, so the look is checked on the SNBT itself.
+        val look = MemoryConfiguration().apply { set("Derp", true) }
+        assertTrue("Pumpkin:0b" in LegacyImporter(sis).snapshotOf(EntityType.SNOW_GOLEM, look)!!)
+    }
+
+    @Test
+    fun `tropical fish look and chance 0 are kept`() {
+        val options = MemoryConfiguration().apply { set("Pattern", "STRIPEY"); set("BodyColor", "BLUE"); set("PatternColor", "YELLOW") }
+        val snbt = LegacyImporter(sis).snapshotOf(EntityType.TROPICAL_FISH, options)!!
+        // STRIPEY = large pattern 1; BLUE = 11, YELLOW = 4
+        assertTrue(snbt.contains("Variant:${1 or (1 shl 8) or (11 shl 16) or (4 shl 24)}"), snbt)
+        assertEquals(0, net.azisaba.sis.model.TradeOptions(chance = 0).chance)
+    }
 }

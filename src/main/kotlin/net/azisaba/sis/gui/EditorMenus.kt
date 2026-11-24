@@ -21,6 +21,8 @@ import java.util.UUID
 
 object EditorMenus {
     fun openShopEditor(sis: Sis, player: Player, shop: Shop, parent: Menu? = null) {
+        // One editor at a time (two would edit trades by list position and overwrite each other).
+        if (EditLocks.refuse(player, shop)) return
         ShopEditorMenu(sis, player, shop).also { it.parent = parent }.open()
     }
 }
@@ -39,7 +41,8 @@ object CaptureRequests {
  * Admin view of a shop: its trades (click to edit, shift-click to move, Q to duplicate) and buttons for the shop
  * itself.
  */
-class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Shop) : Menu(viewer, 6) {
+class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Shop) : Menu(viewer, 6), ShopEditing {
+    override val editedShop: Shop get() = shop
     private var page = 0
     override val pageButtons = 45 to 47
     private val perPage = 36
@@ -77,7 +80,9 @@ class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sho
             Messages.send(viewer, "editor.capture-start")
         }
         slot(b + 4, icons.icon("equipment", Messages.get("editor.equipment"))) {
-            if (sis.npcs.entityOf(shop) is LivingEntity && shop.npc is NpcSpec.Vanilla) EquipmentMenu(sis, viewer, shop).also { it.parent = this }.open()
+            val citizens = shop.npc as? NpcSpec.Citizens
+            if ((sis.npcs.entityOf(shop) is LivingEntity && shop.npc is NpcSpec.Vanilla) || (citizens != null && net.azisaba.sis.npc.CitizensBridge.equipment(citizens) != null))
+                EquipmentMenu(sis, viewer, shop).also { it.parent = this }.open()
             else Messages.send(viewer, "editor.equipment-unavailable")
         }
         slot(b + 5, icons.icon("respawn", Messages.get("editor.respawn"))) {
@@ -89,7 +94,8 @@ class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sho
             if (loc == null) Messages.send(viewer, "editor.world-not-loaded") else viewer.teleportAsync(loc)
         }
         slot(b + 7, icons.icon("itemize-shop", Messages.get("editor.itemize-shop"), Messages.lines("editor.itemize-shop-lore"))) {
-            viewer.inventory.addItem(Itemizer.shopItem(sis, shop)).values.forEach { viewer.world.dropItem(viewer.location, it) }
+            val item = Itemizer.shopItem(sis, shop) ?: return@slot Messages.send(viewer, "editor.itemize-too-large")
+            viewer.inventory.addItem(item).values.forEach { viewer.world.dropItem(viewer.location, it) }
             Messages.send(viewer, "editor.itemized")
         }
         slot(b + 8, icons.icon("delete", Messages.get("editor.delete-shop"))) {
@@ -161,7 +167,8 @@ class ShopEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sho
  * inventory (left = cost, right = reward). Click an entry to change its amount, right-click to remove it.
  * Every change is saved at once.
  */
-class TradeEditorMenu(private val sis: Sis, viewer: Player, private val shop: Shop, original: Trade?) : Menu(viewer, 6) {
+class TradeEditorMenu(private val sis: Sis, viewer: Player, private val shop: Shop, original: Trade?) : Menu(viewer, 6), ShopEditing {
+    override val editedShop: Shop get() = shop
     private var trade: Trade = original ?: Trade(costs = emptyList(), rewards = emptyList())
     private var stored = original != null
 
@@ -339,17 +346,20 @@ class TradeEditorMenu(private val sis: Sis, viewer: Player, private val shop: Sh
 }
 
 /** The six equipment slots of a vanilla NPC; closing applies them to the NPC and its snapshot. */
-class EquipmentMenu(private val sis: Sis, viewer: Player, private val shop: Shop) : Menu(viewer, 1) {
+class EquipmentMenu(private val sis: Sis, viewer: Player, private val shop: Shop) : Menu(viewer, 1), ShopEditing {
+    override val editedShop: Shop get() = shop
     private val slots = listOf(1, 2, 3, 4, 6, 7)
     override val editableSlots: Set<Int> = slots.toSet()
 
     override fun title(): Component = Messages.get("editor.equipment-title")
 
     override fun render() {
-        val entity = sis.npcs.entityOf(shop) as? LivingEntity
-        val eq = entity?.equipment
-        val current = listOf(eq?.helmet, eq?.chestplate, eq?.leggings, eq?.boots, eq?.itemInMainHand, eq?.itemInOffHand)
-        slots.forEachIndexed { i, s -> slot(s, current[i]?.takeUnless { it.type.isAir }?.clone()) }
+        val citizens = shop.npc as? NpcSpec.Citizens
+        val current = if (citizens != null) net.azisaba.sis.npc.CitizensBridge.equipment(citizens).orEmpty() else {
+            val eq = (sis.npcs.entityOf(shop) as? LivingEntity)?.equipment
+            listOf(eq?.helmet, eq?.chestplate, eq?.leggings, eq?.boots, eq?.itemInMainHand, eq?.itemInOffHand)
+        }
+        slots.forEachIndexed { i, s -> slot(s, current.getOrNull(i)?.takeUnless { it.type.isAir }?.clone()) }
         slot(0, sis.icons.icon("info", Messages.get("editor.equipment-help"), Messages.lines("editor.equipment-help-lore")))
         slot(5, sis.icons.filler("divider"))
         slot(8, sis.icons.icon("back", Messages.get("gui.back"))) { save(); back() }
@@ -373,6 +383,10 @@ class EquipmentMenu(private val sis: Sis, viewer: Player, private val shop: Shop
     override fun onClose() = save()
 
     private fun save() {
-        sis.npcs.applyEquipment(shop, slots.map { inventory.getItem(it)?.takeUnless { item -> item.type == Material.AIR } }, viewer)
+        val items = slots.map { inventory.getItem(it)?.takeUnless { item -> item.type == Material.AIR } }
+        // Citizens keeps the equipment of its NPCs itself (Equipment trait).
+        val citizens = shop.npc as? NpcSpec.Citizens
+        if (citizens != null) net.azisaba.sis.npc.CitizensBridge.setEquipment(citizens, items)
+        else sis.npcs.applyEquipment(shop, items, viewer)
     }
 }

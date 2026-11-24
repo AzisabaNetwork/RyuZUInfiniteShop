@@ -56,14 +56,17 @@ class TradeCounter(private val db: Database, private val clock: PeriodClock) {
         }
     }
 
-    /** Forgets every count of the player in every period (admin command). */
+    /**
+     * Forgets every count of the player in every period (admin command). Trades with a server-wide limit have no
+     * count of their own per player: their shared count is reset.
+     */
     fun resetPlayer(player: UUID, trades: Collection<Trade>): CompletableFuture<*> {
-        val ids = trades.map { it.id }.toSet()
-        counts.keys.removeIf { it.scope == player.toString() && it.trade in ids }
+        val rows = trades.map { scopeOf(it, player) to it.id }.toSet()
+        counts.keys.removeIf { (it.scope to it.trade) in rows }
         return db.async { c ->
             c.prepareStatement("DELETE FROM ${db.counts} WHERE scope_key = ? AND trade_id = ?").use { ps ->
-                for (id in ids) {
-                    ps.setString(1, player.toString()); ps.setString(2, id.toString()); ps.addBatch()
+                for ((scope, id) in rows) {
+                    ps.setString(1, scope); ps.setString(2, id.toString()); ps.addBatch()
                 }
                 ps.executeBatch()
             }
@@ -82,6 +85,9 @@ class TradeCounter(private val db: Database, private val clock: PeriodClock) {
     }
 
     fun loadPlayerAsync(player: UUID): CompletableFuture<*> = db.async { c -> readRows(c, player.toString()) }.thenAccept { rows ->
+        // Already loaded (pre-login, or another read finished first): memory is ahead of what was read, because
+        // trades made after the read was queued are only in memory so far.
+        if (player in loadedPlayers) return@thenAccept
         counts.keys.removeIf { it.scope == player.toString() }
         counts.putAll(rows)
         loadedPlayers += player

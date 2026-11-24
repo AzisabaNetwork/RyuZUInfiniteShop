@@ -26,6 +26,18 @@ object InventorySim {
         return left <= 0
     }
 
+    /** How many of [template] still fit (on similar stacks and in empty slots). */
+    fun capacity(contents: Array<ItemStack?>, template: ItemStack): Long {
+        val max = template.maxStackSize.coerceAtLeast(1).toLong()
+        return contents.sumOf { slot ->
+            when {
+                slot == null || slot.type.isAir -> max
+                slot.isSimilar(template) -> (max - slot.amount).coerceAtLeast(0)
+                else -> 0L
+            }
+        }
+    }
+
     /**
      * Adds [stack] like Minecraft does: first onto similar stacks, then into empty slots.
      * Returns how many did not fit.

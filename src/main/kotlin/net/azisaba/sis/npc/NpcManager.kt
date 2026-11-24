@@ -39,6 +39,11 @@ class NpcManager(
     private val spawned = HashMap<String, Spawned>()
     private val byEntity = HashMap<UUID, String>()
 
+    /** Shops whose NPC could not be spawned (unknown mob, MythicMobs missing, ...). */
+    private val failed = HashSet<String>()
+
+    private fun needsEntity(shop: Shop) = shop.npc is NpcSpec.Vanilla || shop.npc is NpcSpec.Mythic
+
     fun shopOf(entity: Entity): Shop? {
         val id = byEntity[entity.uniqueId] ?: entity.persistentDataContainer.get(shopKey, PersistentDataType.STRING) ?: return null
         return shops.get(id)
@@ -53,19 +58,28 @@ class NpcManager(
         for (shop in shops.all) if (shop.location.isLoaded()) spawn(shop)
     }
 
+    /** Set while menus are closed for a reload or shutdown (see [recapture]). */
+    var closing = false
+
     fun despawnAll() {
         spawned.keys.toList().forEach(::despawn)
+        failed.clear()
     }
 
     fun spawn(shop: Shop) {
         despawn(shop.id)
         val location = shop.location.toBukkit() ?: return
         if (!location.isChunkLoaded) return
-        val npc = runCatching { createNpc(shop, location) }.getOrElse {
-            plugin.logger.warning("Could not spawn the NPC of ${shop.id}: $it")
+        var created: Entity? = null
+        val npc = runCatching { createNpc(shop, location)?.also { created = it; prepare(it, shop) } }.getOrElse {
+            // An entity that could not be set up must not stay (it would be a normal, killable mob).
+            created?.remove()
+            if (shop.id !in failed) plugin.logger.warning("Could not spawn the NPC of ${shop.id}: $it")
             null
         }
-        npc?.let { prepare(it, shop) }
+        // Remembered so heal() does not despawn and respawn it every few seconds (and log each time); a change
+        // of the shop, a reload or /sis respawn tries again.
+        if (npc == null && needsEntity(shop)) failed += shop.id else failed -= shop.id
         val label = createLabel(shop, location, npc)
         spawned[shop.id] = Spawned(npc?.uniqueId, label?.uniqueId)
         npc?.let { byEntity[it.uniqueId] = shop.id }
@@ -145,10 +159,9 @@ class NpcManager(
     /** Respawns NPCs that disappeared (killed by another plugin, MythicMobs despawned them, ...). */
     fun heal() {
         for (shop in shops.all) {
-            if (!shop.location.isLoaded()) continue
+            if (!shop.location.isLoaded() || shop.id in failed) continue
             val s = spawned[shop.id]
-            val npcMissing = shop.npc is NpcSpec.Vanilla || shop.npc is NpcSpec.Mythic
-            val dead = s == null || (npcMissing && (s.npc == null || Bukkit.getEntity(s.npc)?.isValid != true))
+            val dead = s == null || (needsEntity(shop) && (s.npc == null || Bukkit.getEntity(s.npc)?.isValid != true))
             if (dead) spawn(shop)
         }
     }
@@ -215,11 +228,14 @@ class NpcManager(
 
     private fun recapture(shop: Shop, entity: Entity, actor: org.bukkit.command.CommandSender?, action: String) {
         if (shop.npc !is NpcSpec.Vanilla) return
-        Bukkit.getScheduler().runTask(plugin, Runnable {
+        val save = Runnable {
             if (!entity.isValid) return@Runnable
             capture(entity)?.let { shop.npc = it }
             shops.changed(shop, actor, action)
-        })
+        }
+        // Closing the equipment menu on shutdown/reload: no task can be scheduled any more, and the NPC is
+        // despawned before the next tick, so save right away.
+        if (plugin.isEnabled && !closing) Bukkit.getScheduler().runTask(plugin, save) else save.run()
     }
 
     override fun added(shop: Shop) = spawn(shop)

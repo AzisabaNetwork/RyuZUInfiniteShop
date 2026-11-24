@@ -36,6 +36,8 @@ class PlayerSettingsService(private val db: Database) {
         )
     }
 
+    fun isLoaded(player: UUID): Boolean = cache.containsKey(player)
+
     fun unload(player: UUID) {
         cache.remove(player)
     }

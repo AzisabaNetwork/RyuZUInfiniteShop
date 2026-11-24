@@ -2,6 +2,8 @@
 prefix: "<dark_gray>[<green>SIS</green>]</dark_gray> "
 
 shop:
+  being-edited: "<red>This shop is being edited by <player>. Please wait a moment"
+  load-failed: "<red>Could not read your data. Please try again in a moment"
   unnamed: "<gray>Shop <id>"
   no-trades: "<red>This shop has no trades yet"
   no-trades-admin: "<gray>Sneak + right-click or /sis edit <id> to add trades"
@@ -19,6 +21,7 @@ status:
   cancelled: "<red>The trade did not happen"
 
 result:
+  trade-gone: "<red>This trade was removed or changed"
   not_enough_items: "<red>Not enough items"
   not_enough_money: "<red>Not enough money"
   limit_reached: "<red>Trade limit reached"
@@ -124,6 +127,10 @@ list:
     - "<dark_gray>Shift-click: edit"
 
 editor:
+  citizens-unavailable: "<red>Citizens is not installed, so no Citizens NPC can be created"
+  citizens-linked: "<green>Linked Citizens NPC <id> to this shop"
+  itemize-too-large: "<red>This shop is too large to become an item (split its trades)"
+  stale-shop: "<red>Shop <id> was changed or removed after this screen was opened. Open it again"
   shop-title: "Edit: <shop>"
   trade-title: "Edit trade: <shop>"
   new-trade: "<green>+ New trade"
@@ -215,6 +222,7 @@ editor:
   skin-needs-mannequin: "<red>Only mannequin shops have a skin"
 
 itemize:
+  unreadable: "<red>Could not read the data of this item: <error>"
   trade-name: "<aqua>Trade: </aqua><shop>"
   trade-lore:
     - ""
@@ -231,6 +239,7 @@ settings:
   saved: "<green>Settings saved"
 
 dialog:
+  unavailable: "<red>The form could not be opened on this server. Please tell an admin"
   save: "Save"
   settings:
     title: "My settings"
@@ -308,6 +317,7 @@ dialog:
     ok: "Got it!"
 
 command:
+  reloaded-single: "<green>Reloaded shop <id> (<trades> trades)"
   help-header: "<green>SearchableInfiniteShop</green> <gray>commands"
   help-line: "<white><usage></white> <dark_gray>-</dark_gray> <gray><description>"
   desc:
@@ -327,6 +337,7 @@ command:
     mmid: "Explain whether items are stored by MMID"
     migrate: "Import 1.x data"
     reload: "Reload config and shops"
+    reload-single: "Read one shop file again"
     save: "Write pending shop changes now"
   no-permission: "<red>You don't have permission"
   player-only: "<red>Players only"
@@ -342,6 +353,7 @@ command:
   searchable-set: "<green>Set searchable=<value> for <count> shops in <world>"
   invalid-trade-number: "<red>Trade number must be 1-<max>"
   limit-changed: "<green>Changed the trade counts of <player> (<count> trades)"
+  limit-shared: "<yellow><count> of them have a server-wide limit (the shared count was changed for everyone)"
   history-empty: "<red><id> has no history"
   history-header: "<green>History of <id> (<count>):"
   history-line: "<gray>#<number> <white><label>"
@@ -352,6 +364,7 @@ command:
   saved: "<green>Saved"
 
 migrate:
+  shopkeepers: "<green>Shopkeepers: <created> shops created, <merged> merged, <trades> trades, <left> left for later (world not loaded)"
   started: "<yellow>Importing 1.x data from <folder>"
   done: "<green>Done: <shops> shops / <trades> trades / <counts> counts / <skipped> skipped / <failed> failed"
   failed-line: "<red>  <id>: <error>"

@@ -8,6 +8,7 @@ import net.azisaba.sis.gui.CaptureRequests
 import net.azisaba.sis.gui.EditorMenus
 import net.azisaba.sis.gui.TradeMenu
 import net.azisaba.sis.itemize.Itemizer
+import net.azisaba.sis.itemize.LegacyGems
 import net.azisaba.sis.model.Shop
 import net.azisaba.sis.model.ShopLocation
 import org.bukkit.Bukkit
@@ -46,6 +47,7 @@ class ShopOpener(private val sis: Sis) {
     val tutorialShown: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
 
     fun open(player: Player, shop: Shop, forceTrade: Boolean = false) {
+        if (net.azisaba.sis.gui.EditLocks.refuse(player, shop)) return
         val admin = player.hasPermission("sis.admin")
         if (admin && player.isSneaking && !forceTrade) {
             EditorMenus.openShopEditor(sis, player, shop)
@@ -58,7 +60,14 @@ class ShopOpener(private val sis: Sis) {
             if (wants && tutorialShown.add(player.uniqueId)) sis.dialogs.tutorial(player, show) else show()
         }
         if (sis.counter.isLoaded(player.uniqueId)) afterLoad()
-        else sis.counter.loadPlayerAsync(player.uniqueId).thenRun { Bukkit.getScheduler().runTask(sis.plugin, Runnable { afterLoad() }) }
+        else sis.counter.loadPlayerAsync(player.uniqueId).whenComplete { _, error ->
+            Bukkit.getScheduler().runTask(sis.plugin, Runnable {
+                if (error == null) afterLoad() else {
+                    sis.plugin.logger.warning("Could not read trade counts of ${player.name}: $error")
+                    Messages.send(player, "shop.load-failed")
+                }
+            })
+        }
     }
 }
 
@@ -80,6 +89,13 @@ class ShopInteractListener(private val sis: Sis, private val opener: ShopOpener)
         CaptureRequests.take(player)?.let { shopId ->
             event.isCancelled = true
             val shop = sis.shops.get(shopId) ?: return
+            // A Citizens NPC is not copied but linked: clicking it opens the shop (1.x "register by clicking").
+            net.azisaba.sis.npc.CitizensBridge.specOf(event.rightClicked)?.let { citizens ->
+                shop.npc = citizens
+                sis.shops.changed(shop, player, "citizens", citizens.ref, respawn = true)
+                Messages.send(player, "editor.citizens-linked", "id" to citizens.ref)
+                return
+            }
             val spec = sis.npcs.capture(event.rightClicked)
             if (spec == null) Messages.send(player, "editor.capture-failed") else {
                 shop.npc = spec
@@ -105,12 +121,19 @@ class ShopInteractListener(private val sis: Sis, private val opener: ShopOpener)
         val block = event.clickedBlock ?: return
         val player = event.player
         val item = event.item
-        if (player.isSneaking && player.hasPermission("sis.admin") && item?.persistentDataContainer?.has(Itemizer.shopKey) == true) {
+        val shopItem = item?.persistentDataContainer?.has(Itemizer.shopKey) == true
+        if (player.isSneaking && player.hasPermission("sis.admin") && (shopItem || LegacyGems.isLegacy(item))) {
             event.isCancelled = true
             val at = block.getRelative(event.blockFace).location.add(0.5, 0.0, 0.5)
             at.yaw = (player.location.yaw + 180f).let { Math.round(it / 45f) * 45f }.let { if (it > 180f) it - 360f else it }
             val location = ShopLocation.of(at)
-            val shop = Itemizer.readShop(item, sis.shops.newId(location), location) ?: return
+            val shop = runCatching {
+                if (shopItem) Itemizer.readShop(item, sis.shops.newId(location), location)
+                else LegacyGems.read(sis, item)?.let { LegacyGems.shop(sis, it, sis.shops.newId(location), location) }
+            }.getOrElse {
+                Messages.send(player, "itemize.unreadable", "error" to (it.message ?: it.toString()))
+                return
+            } ?: return
             sis.shops.create(shop, player)
             Messages.send(player, "itemize.placed", "id" to shop.id)
             return
@@ -124,10 +147,16 @@ class ShopInteractListener(private val sis: Sis, private val opener: ShopOpener)
     /** Admin right-clicks a shop with a trade/shop item: its trades are added. */
     private fun handleItemized(player: Player, shop: Shop): Boolean {
         val item = player.inventory.itemInMainHand
-        if (!Itemizer.isItemized(item) || !player.hasPermission("sis.admin")) return false
-        val trades = Itemizer.readTrade(item)?.let(::listOf)
-            ?: Itemizer.readShop(item, shop.id, shop.location)?.trades
-            ?: return false
+        if (!player.hasPermission("sis.admin")) return false
+        val current = Itemizer.isItemized(item)
+        if (!current && !LegacyGems.isLegacy(item)) return false
+        val trades = runCatching {
+            if (current) Itemizer.readTrade(item)?.let(::listOf) ?: Itemizer.readShop(item, shop.id, shop.location)?.trades
+            else LegacyGems.read(sis, item)?.trades?.takeIf { it.isNotEmpty() }
+        }.getOrElse {
+            Messages.send(player, "itemize.unreadable", "error" to (it.message ?: it.toString()))
+            return true
+        } ?: return false
         shop.trades += trades
         sis.shops.changed(shop, player, "merge", "${trades.size} trades")
         Messages.send(player, "itemize.merged", "count" to trades.size, "shop" to sis.shops.displayName(shop))
@@ -173,6 +202,9 @@ class NpcProtectListener(private val sis: Sis) : Listener {
     fun onTeleport(event: EntityTeleportEvent) { if (isShop(event.entity)) event.isCancelled = true }
 
     @EventHandler(ignoreCancelled = true)
+    fun onCreeperPower(event: org.bukkit.event.entity.CreeperPowerEvent) { if (isShop(event.entity)) event.isCancelled = true }
+
+    @EventHandler(ignoreCancelled = true)
     fun onPathfind(event: EntityPathfindEvent) { if (isShop(event.entity)) event.isCancelled = true }
 }
 
@@ -210,13 +242,20 @@ class PlayerListener(private val sis: Sis, private val opener: ShopOpener) : Lis
 
     @EventHandler
     fun onJoin(event: PlayerJoinEvent) {
-        if (!sis.counter.isLoaded(event.player.uniqueId)) sis.counter.loadPlayerAsync(event.player.uniqueId)
+        val id = event.player.uniqueId
+        if (!sis.counter.isLoaded(id)) sis.counter.loadPlayerAsync(id)
+        // Logging in again from elsewhere: the old session's quit ran after this session's pre-login and dropped
+        // the settings (Storage Box use would silently fall back to the defaults).
+        if (!sis.settings.isLoaded(id)) Bukkit.getScheduler().runTaskAsynchronously(sis.plugin, Runnable {
+            runCatching { sis.settings.loadBlocking(id) }.onFailure { sis.plugin.logger.warning("Could not read the settings of ${event.player.name}: $it") }
+        })
     }
 
     @EventHandler
     fun onQuit(event: PlayerQuitEvent) {
         val id = event.player.uniqueId
         CaptureRequests.take(event.player)
+        net.azisaba.sis.gui.EditLocks.quit(event.player)
         // Counts may still be queued for writing; dropping them from memory is safe (writes do not need the cache).
         sis.counter.unloadPlayer(id)
         opener.tutorialShown -= id

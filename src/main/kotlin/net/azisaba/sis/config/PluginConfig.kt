@@ -58,6 +58,10 @@ data class PluginConfig(
     val searchTitle: String,
     val icons: Map<String, IconSpec>,
     val allowRemoteTrade: Boolean,
+    /** Shopkeepers save.yml import: replace a shop already at the block (else add the trades). */
+    val shopkeepersOverwrite: Boolean = false,
+    /** Shopkeepers save.yml import: new shops are searchable. */
+    val shopkeepersSearchable: Boolean = true,
     val maxSearchResults: Int,
     val tutorial: Boolean,
     val tradeItemIcon: IconSpec,
@@ -142,6 +146,8 @@ data class PluginConfig(
                 searchTitle = config.getString("gui.search-title", "Search")!!,
                 icons = icons,
                 allowRemoteTrade = config.getBoolean("search.allow-remote-trade", false),
+                shopkeepersOverwrite = config.getBoolean("shopkeepers.overwrite", false),
+                shopkeepersSearchable = config.getBoolean("shopkeepers.searchable", true),
                 maxSearchResults = config.getInt("search.max-results", 2000).coerceAtLeast(1),
                 tutorial = config.getBoolean("tutorial", true),
                 tradeItemIcon = IconSpec.read(config.getConfigurationSection("itemize.trade-item"), Material.EMERALD),
