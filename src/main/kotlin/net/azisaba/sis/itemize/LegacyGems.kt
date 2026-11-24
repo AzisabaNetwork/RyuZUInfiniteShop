@@ -3,7 +3,7 @@ package net.azisaba.sis.itemize
 import com.google.gson.JsonParser
 import net.azisaba.sis.Sis
 import net.azisaba.sis.migration.LegacyImporter
-import net.azisaba.sis.migration.legacy.LegacySkullMigration
+import net.azisaba.sis.migration.legacy.LegacyNbt
 import net.azisaba.sis.model.Shop
 import net.azisaba.sis.model.ShopLocation
 import net.azisaba.sis.model.Trade
@@ -23,7 +23,7 @@ object LegacyGems {
     private fun customData(item: ItemStack?): Map<*, *>? {
         if (item == null || item.type.isAir) return null
         return runCatching {
-            val root = LegacySkullMigration.readNbt(item.serializeAsBytes())
+            val root = LegacyNbt.read(item.serializeAsBytes())
             (root["components"] as? Map<*, *>)?.get("minecraft:custom_data") as? Map<*, *>
         }.getOrNull()
     }
